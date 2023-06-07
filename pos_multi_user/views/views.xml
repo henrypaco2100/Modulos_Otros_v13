@@ -1,0 +1,15 @@
+<odoo>
+  <data>
+    <record id="view_pos_config_kanban" model="ir.ui.view">
+        <field name="name">erp.pos.kanban.inherit</field>
+        <field name="model">pos.config</field>
+        <field name="inherit_id" ref="point_of_sale.view_pos_config_kanban"/>
+        <field name="arch" type="xml">
+            <button name="open_ui" position="after">
+                <field name="can_join_pos" invisible="1"/>
+                <button t-if="record.can_join_pos.raw_value === true" class="btn btn-primary" name="btn_join" type="object">Join</button>
+            </button>
+        </field>
+    </record>
+  </data>
+</odoo>
