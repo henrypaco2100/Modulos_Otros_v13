@@ -1,3 +1,22 @@
+/* es para desabilitar los producto sin stock */
+.pos .product.disable {
+    position:relative;
+    vertical-align: top;
+    display: inline-block;
+    line-height: 100px;
+    font-size: 11px;
+    margin: 8px !important;
+    width: 122px;
+    height:115px;
+    background:#fff;
+    border: 1px solid #e2e2e2;
+    border-radius: 3px;
+    border-bottom-width: 3px;
+    overflow: hidden;
+    cursor: pointer;
+    pointer-events: none;
+    opacity: 0.4;
+}
 .pos .product .qty-tag {
     position: absolute;
     top: 2px;
@@ -5,13 +24,13 @@
     vertical-align: top;
     color: white;
     line-height: 13px;
-    background: #7f82ac;
+    background: #46C731;
     padding: 2px 5px;
     border-radius: 2px;
     font-weight: bold;
 }
 .pos .product .qty-tag.not-available {
-    background: #d882ac;
+    background: #E63627;
 }
 
 .pos .order .orderline .qty-info {
