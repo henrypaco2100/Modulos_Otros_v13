@@ -51,7 +51,13 @@ class PosConfig(models.Model):
                     WHERE product_id = p.id AND location_id = %s
                 )
             """
+            print('entro stock disponible')
             self.env.cr.execute(query, (location_id,))
+    
+    def limpiar_cache(self):
+        config_ids = self.env['pos.config'].search([])
+        for config_id in config_ids:
+            config_id.delete_cache()
 
     # def actualizar_cantidad_productos(self, location_id):
     #     location_interno = self.env['stock.location'].sudo().browse(location_id)

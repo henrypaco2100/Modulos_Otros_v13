@@ -21,6 +21,7 @@ odoo.define("pos_product_available.PosModel", function(require) {
             });
         },
         actualizar_stock: function(config, location) {
+            console.log('desde la funcion actualizar js');
             this.chrome._rpc({
                     model: 'pos.config',
                     method: 'actualizar_cantidad_productos',
@@ -48,6 +49,7 @@ odoo.define("pos_product_available.PosModel", function(require) {
 
             // If product.product model is not presented in this.models after super was called then pos_cache module installed
             return loaded.then(function() {
+                console.log('load server');
                 self.actualizar_stock(self.config_id,self.config.default_location_src_id[0]);
                 return rpc
                     .query({
