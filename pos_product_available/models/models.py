@@ -41,6 +41,7 @@ class PosConfig(models.Model):
     #         """
     #         self.env.cr.execute(query, (location_id,))
     def actualizar_cantidad_productos(self, location_id):
+        # print('location_id',location_id)
         location_interno = self.env['stock.location'].sudo().browse(location_id)
         if location_interno.usage == 'internal':
             query = """
@@ -51,12 +52,16 @@ class PosConfig(models.Model):
                     WHERE product_id = p.id AND location_id = %s
                 )
             """
-            print('entro stock disponible')
+            # print('entro stock disponible')
             self.env.cr.execute(query, (location_id,))
+        self.sudo().limpiar_cache()
     
-    def limpiar_cache(self):
+    def limpiar_cache(self,):
+        # print(' user_id',self.env.user)
         config_ids = self.env['pos.config'].search([])
-        for config_id in config_ids:
+        # print('config_ids',config_ids)
+        for config_id in config_ids.filtered(lambda x:x.current_user_id.id ==self.env.user.id ):
+            # print('config_id name',config_id.name,config_id.current_user_id)
             config_id.delete_cache()
 
     # def actualizar_cantidad_productos(self, location_id):

@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+
+        <template id="anita_list_res" name="anita_list_res" inherit_id="web.assets_backend">
+
+            <xpath expr="." position="inside">
+
+                <link rel="stylesheet" type="text/css" href='/anita_theme_base/static/css/anita_variables.scss'/>
+                <link rel="stylesheet" type="text/css" href='/anita_theme_base/static/css/mixins/_flex.scss'/>
+                <link rel="stylesheet" type="text/css" href='/anita_theme_base/static/css/mixins/_box_shadow.scss'/>
+                <link rel="stylesheet" type="text/css" href='/anita_theme_base/static/css/mixins/_clearfix.scss'/>
+                <link rel="stylesheet" type="text/css" href='/anita_theme_base/static/css/mixins/_float.scss'/>
+                <link rel="stylesheet" type="text/css" href='/anita_theme_base/static/css/mixins/_hover.scss'/>
+                <link rel="stylesheet" type="text/css" href='/anita_theme_base/static/css/mixins/_gradients.scss'/>
+                <link rel="stylesheet" type="text/css" href='/anita_theme_base/static/css/mixins/_buttons.scss'/>
+                <link rel="stylesheet" type="text/css" href='/anita_theme_base/static/css/anita_functions.scss'/>
+                <link rel="stylesheet" type="text/css" href='/anita_theme_base/static/css/anita_form_controls.scss'/>
+                <link rel="stylesheet" type="text/css" href='/anita_theme_base/static/css/anita_buttons.scss'/>
+                <link rel="stylesheet" type="text/css" href='/anita_theme_base/static/css/anita_form_view.scss'/>
+                <link rel="stylesheet" type="text/css" href='/anita_theme_base/static/css/anita_list_view.scss'/>
+
+            </xpath>
+        </template>
+
+    </data>
+</odoo>
