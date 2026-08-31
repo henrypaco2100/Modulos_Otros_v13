@@ -35,10 +35,26 @@ class PosConfig(models.Model):
     # ir.actions.server methods:
     @api.model
     def notify_orders_updates(self):
-        ids = self.env.context["active_ids"]
-        if len(ids):
-            message = {"updated_orders": ids}
-            self.search([])._send_to_channel(CHANNEL, message)
+        """Notify only the POS configuration that owns each updated order.
+
+        The original module sent every order update to every POS configuration
+        (`self.search([])`), so with two or more shops each POS could receive
+        history updates that belonged to another shop.
+        """
+        ids = self.env.context.get("active_ids", [])
+        if not ids:
+            return
+
+        orders = self.env["pos.order"].browse(ids).exists()
+        orders_by_config = {}
+        for order in orders:
+            if not order.config_id:
+                continue
+            orders_by_config.setdefault(order.config_id.id, []).append(order.id)
+
+        for config_id, order_ids in orders_by_config.items():
+            message = {"updated_orders": order_ids}
+            self.browse(config_id)._send_to_channel(CHANNEL, message)
 
 
 class PosOrder(models.Model):

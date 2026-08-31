@@ -432,7 +432,10 @@ odoo.define("pos_orders_history.screens", function(require) {
                     rpc.query({
                         model: "pos.order",
                         method: "search_read",
-                        args: [[["pos_history_reference_uid", "=", code.code]]],
+                        args: [[
+                            ["pos_history_reference_uid", "=", code.code],
+                            ["config_id", "=", self.pos.config.id],
+                        ]],
                     }).then(
                         function(o) {
                             if (o && o.length) {

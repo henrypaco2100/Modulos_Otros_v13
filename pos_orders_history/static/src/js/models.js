@@ -24,6 +24,17 @@ odoo.define("pos_orders_history.models", function(require) {
         add_subscriber: function(subscriber) {
             this.subscribers.push(subscriber);
         },
+        // Keep the history isolated by POS configuration (shop).
+        // config_id is normally returned by Odoo as [id, display_name].
+        is_order_for_current_pos: function(order) {
+            if (!order || !order.config_id) {
+                return false;
+            }
+            var config_id = order.config_id instanceof Array
+                ? order.config_id[0]
+                : order.config_id;
+            return config_id === this.config.id;
+        },
         on_orders_history_updates: function(message) {
             var self = this;
             // State of orders
@@ -39,12 +50,16 @@ odoo.define("pos_orders_history.models", function(require) {
                     if (order instanceof Array) {
                         order = order[0];
                     }
-                    if (state.indexOf(order.state) !== -1) {
+                    // Ignore updates from another POS/shop.
+                    if (
+                        self.is_order_for_current_pos(order) &&
+                        state.indexOf(order.state) !== -1
+                    ) {
                         self.update_orders_history(order);
+                        self.get_order_history_lines_by_order_id(id).then(function(lines) {
+                            self.update_orders_history_lines(lines);
+                        });
                     }
-                });
-                self.get_order_history_lines_by_order_id(id).then(function(lines) {
-                    self.update_orders_history_lines(lines);
                 });
             });
         },
@@ -52,7 +67,7 @@ odoo.define("pos_orders_history.models", function(require) {
             return rpc.query({
                 model: "pos.order",
                 method: "search_read",
-                args: [[["id", "=", id]]],
+                args: [[["id", "=", id], ["config_id", "=", this.config.id]]],
             });
         },
         get_order_history_lines_by_order_id: function(id) {
@@ -67,6 +82,14 @@ odoo.define("pos_orders_history.models", function(require) {
                 orders_to_update = [];
             if (!(orders instanceof Array)) {
                 orders = [orders];
+            }
+            // Defense in depth: never insert an order from another POS into
+            // the local history, even if it arrives through another RPC path.
+            orders = _.filter(orders, function(order) {
+                return self.is_order_for_current_pos(order);
+            });
+            if (!orders.length) {
+                return;
             }
             if (this.db.pos_orders_history.length !== 0) {
                 _.each(orders, function(updated_order) {
@@ -155,6 +178,9 @@ odoo.define("pos_orders_history.models", function(require) {
             }
 
             domain.push(["state", "in", state]);
+
+            // IMPORTANT: each POS/shop must load only its own orders.
+            domain.push(["config_id", "=", self.config.id]);
 
             // Number of orders
             if (self.config.load_orders_of_last_n_days) {
