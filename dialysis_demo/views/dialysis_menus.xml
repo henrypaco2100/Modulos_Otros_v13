@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <menuitem id="menu_dialysis_root" name="Hemodiálisis" sequence="30" groups="base.group_user"/>
+    <menuitem id="menu_dialysis_session" name="Sesiones" parent="menu_dialysis_root"
+              action="action_dialysis_session" sequence="10"/>
+    <menuitem id="menu_dialysis_patient" name="Pacientes" parent="menu_dialysis_root"
+              action="action_dialysis_patient" sequence="20"/>
+</odoo>

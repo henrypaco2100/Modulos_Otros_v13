@@ -1,0 +1,9 @@
+id,name,model_id/id,group_id/id,perm_read,perm_write,perm_create,perm_unlink
+access_dialysis_patient_user,dialysis.patient user,model_dialysis_patient,base.group_user,1,1,1,0
+access_dialysis_session_user,dialysis.session user,model_dialysis_session,base.group_user,1,1,1,0
+access_dialysis_monitoring_line_user,dialysis.monitoring.line user,model_dialysis_monitoring_line,base.group_user,1,1,1,1
+access_dialysis_supply_line_user,dialysis.supply.line user,model_dialysis_supply_line,base.group_user,1,1,1,1
+access_dialysis_patient_admin,dialysis.patient admin,model_dialysis_patient,base.group_system,1,1,1,1
+access_dialysis_session_admin,dialysis.session admin,model_dialysis_session,base.group_system,1,1,1,1
+access_dialysis_monitoring_line_admin,dialysis.monitoring.line admin,model_dialysis_monitoring_line,base.group_system,1,1,1,1
+access_dialysis_supply_line_admin,dialysis.supply.line admin,model_dialysis_supply_line,base.group_system,1,1,1,1

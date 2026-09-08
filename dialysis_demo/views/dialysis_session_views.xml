@@ -1,0 +1,162 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_dialysis_session_tree" model="ir.ui.view">
+        <field name="name">dialysis.session.tree</field>
+        <field name="model">dialysis.session</field>
+        <field name="arch" type="xml">
+            <tree string="Sesiones de Hemodiálisis"
+                  decoration-info="state == 'in_progress'"
+                  decoration-success="state == 'done'"
+                  decoration-muted="state == 'cancelled'">
+                <field name="name"/>
+                <field name="session_date"/>
+                <field name="patient_id"/>
+                <field name="shift"/>
+                <field name="chair"/>
+                <field name="nurse_id"/>
+                <field name="state"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="view_dialysis_session_form" model="ir.ui.view">
+        <field name="name">dialysis.session.form</field>
+        <field name="model">dialysis.session</field>
+        <field name="arch" type="xml">
+            <form string="Hoja de Sesión de Hemodiálisis">
+                <header>
+                    <button name="action_start" type="object" string="Iniciar diálisis" class="oe_highlight"
+                            attrs="{'invisible': [('state', '!=', 'draft')]}"/>
+                    <button name="action_complete" type="object" string="Completar sesión" class="oe_highlight"
+                            attrs="{'invisible': [('state', '!=', 'in_progress')]}"/>
+                    <button name="action_generate_monitoring_lines" type="object" string="Generar controles"
+                            attrs="{'invisible': [('state', 'not in', ['draft', 'in_progress'])]}"/>
+                    <button name="action_prepare_supplies" type="object" string="Preparar insumos"
+                            attrs="{'invisible': [('state', 'not in', ['draft', 'in_progress'])]}"/>
+                    <button name="action_cancel" type="object" string="Cancelar"
+                            attrs="{'invisible': [('state', 'in', ['done', 'cancelled'])]}"/>
+                    <button name="action_reset_draft" type="object" string="Volver a borrador"
+                            groups="base.group_system" attrs="{'invisible': [('state', '=', 'draft')]}"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,in_progress,done"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="name"/></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="patient_id" attrs="{'readonly': [('state', '=', 'done')]}"/>
+                            <field name="session_date" attrs="{'readonly': [('state', '=', 'done')]}"/>
+                            <field name="nurse_id" attrs="{'readonly': [('state', '=', 'done')]}"/>
+                        </group>
+                        <group>
+                            <field name="shift" attrs="{'readonly': [('state', '=', 'done')]}"/>
+                            <field name="chair" attrs="{'readonly': [('state', '=', 'done')]}"/>
+                            <field name="monitoring_interval" attrs="{'readonly': [('state', '!=', 'draft')]}"/>
+                        </group>
+                    </group>
+
+                    <notebook>
+                        <page string="1. Pre-diálisis">
+                            <group>
+                                <group string="Peso y signos vitales">
+                                    <field name="initial_weight"/>
+                                    <field name="dry_weight"/>
+                                    <field name="interdialytic_gain" readonly="1"/>
+                                    <field name="pre_bp_systolic"/>
+                                    <field name="pre_bp_diastolic"/>
+                                    <field name="pre_heart_rate"/>
+                                </group>
+                                <group string="Acceso y prescripción">
+                                    <field name="vascular_access"/>
+                                    <field name="fremitus_present"/>
+                                    <field name="no_infection_signs"/>
+                                    <field name="programmed_minutes"/>
+                                    <field name="dialyzer"/>
+                                    <field name="initial_heparin"/>
+                                    <field name="uf_target"/>
+                                </group>
+                            </group>
+                        </page>
+
+                        <page string="2. Intra-diálisis">
+                            <field name="monitoring_line_ids" nolabel="1">
+                                <tree editable="bottom">
+                                    <field name="minute"/>
+                                    <field name="control_datetime"/>
+                                    <field name="bp_systolic"/>
+                                    <field name="bp_diastolic"/>
+                                    <field name="heart_rate"/>
+                                    <field name="qb"/>
+                                    <field name="qd"/>
+                                    <field name="venous_pressure"/>
+                                    <field name="arterial_pressure"/>
+                                    <field name="tmp"/>
+                                    <field name="uf_accumulated"/>
+                                    <field name="incident"/>
+                                    <field name="notes"/>
+                                </tree>
+                            </field>
+                        </page>
+
+                        <page string="3. Post-diálisis">
+                            <group>
+                                <group string="Cierre clínico">
+                                    <field name="final_weight"/>
+                                    <field name="post_bp_systolic"/>
+                                    <field name="post_bp_diastolic"/>
+                                    <field name="post_heart_rate"/>
+                                    <field name="uf_total"/>
+                                </group>
+                                <group string="Medicamentos administrados">
+                                    <field name="epo_2000"/>
+                                    <field name="epo_4000"/>
+                                    <field name="iron_sucrose"/>
+                                    <field name="vitamin_d3"/>
+                                </group>
+                            </group>
+                            <separator string="Checklist de insumos"/>
+                            <field name="supply_line_ids" nolabel="1">
+                                <tree editable="bottom">
+                                    <field name="used"/>
+                                    <field name="description"/>
+                                    <field name="quantity"/>
+                                    <field name="product_id"/>
+                                </tree>
+                            </field>
+                            <separator string="Observaciones"/>
+                            <field name="closing_notes" placeholder="Incidencias, evolución o notas de cierre..."/>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_dialysis_session_search" model="ir.ui.view">
+        <field name="name">dialysis.session.search</field>
+        <field name="model">dialysis.session</field>
+        <field name="arch" type="xml">
+            <search string="Buscar sesiones">
+                <field name="name"/>
+                <field name="patient_id"/>
+                <field name="nurse_id"/>
+                <filter string="En diálisis" name="in_progress" domain="[('state', '=', 'in_progress')]"/>
+                <filter string="Completadas" name="done" domain="[('state', '=', 'done')]"/>
+                <group expand="0" string="Agrupar por">
+                    <filter string="Paciente" name="group_patient" context="{'group_by': 'patient_id'}"/>
+                    <filter string="Turno" name="group_shift" context="{'group_by': 'shift'}"/>
+                    <filter string="Sillón" name="group_chair" context="{'group_by': 'chair'}"/>
+                    <filter string="Estado" name="group_state" context="{'group_by': 'state'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_dialysis_session" model="ir.actions.act_window">
+        <field name="name">Sesiones</field>
+        <field name="res_model">dialysis.session</field>
+        <field name="view_mode">tree,form</field>
+        <field name="search_view_id" ref="view_dialysis_session_search"/>
+    </record>
+</odoo>

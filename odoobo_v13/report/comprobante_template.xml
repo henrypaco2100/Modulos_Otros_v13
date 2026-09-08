@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+<template id="comprobante_contable_document">
+  <t t-call="web.html_container"><t t-foreach="docs" t-as="o"><t t-call="web.external_layout">
+    <div class="page" style="font-size:11px;color:#000;">
+      <h3 style="text-align:center;text-decoration:underline;margin:8px 0 12px;">COMPROBANTE CONTABLE</h3>
+      <div class="row" style="margin-bottom:12px;">
+        <div class="col-6"><table style="width:100%;"><tr><td style="width:25%;">FECHA:</td><td><strong t-esc="o.esi_date_in_words()"/></td></tr><tr><td>USUARIO:</td><td><strong t-esc="o.create_uid.name"/></td></tr><tr><td>SEÑORES:</td><td><strong t-esc="o.partner_id.name or ''"/></td></tr><tr><td>GLOSA:</td><td><strong t-esc="o.ref or ''"/></td></tr></table></div>
+        <div class="col-6"><table style="width:100%;"><tr><td style="width:28%;">TIPO:</td><td><strong t-esc="o.journal_id.name"/></td></tr><tr><td>NÚMERO:</td><td><strong t-esc="o.name"/></td></tr><tr t-if="o.esi_check_number"><td>CHEQUE:</td><td><strong t-esc="o.esi_check_number"/></td></tr><tr><td>IMPORTE:</td><td><strong t-esc="o.esi_total_debit()" t-options='{"widget":"monetary","display_currency":o.company_id.currency_id}'/></td></tr></table></div>
+      </div>
+      <table class="table table-sm table-bordered" style="width:100%;table-layout:fixed;font-size:10px;">
+        <thead><tr style="text-align:center;background:#e9ecef;"><th style="width:20%;">CUENTA</th><th style="width:14%;">EMPRESA</th><th>DESCRIPCIÓN</th><th t-if="o.esi_show_analytic" style="width:15%;">ANALÍTICA</th><th t-if="o.esi_show_line_date" style="width:10%;">FECHA</th><th style="width:10%;">DEBE</th><th style="width:10%;">HABER</th></tr></thead>
+        <tbody><tr t-foreach="o.esi_ordered_lines()" t-as="line"><td><span t-esc="line.account_id.code"/> <span t-esc="line.account_id.name"/></td><td t-esc="line.partner_id.name or ''"/><td t-esc="line.name or ''"/><td t-if="o.esi_show_analytic" t-esc="line.analytic_account_id.display_name if line.analytic_account_id else ''"/><td t-if="o.esi_show_line_date" style="text-align:center;"><span t-field="line.date"/></td><td style="text-align:right;"><span t-field="line.debit"/></td><td style="text-align:right;"><span t-field="line.credit"/></td></tr></tbody>
+        <tfoot><tr style="background:#e9ecef;"><th>TOTAL</th><th t-att-colspan="2 + (1 if o.esi_show_analytic else 0) + (1 if o.esi_show_line_date else 0)">SON: <span t-esc="o.esi_amount_in_words()"/></th><th style="text-align:right;"><span t-esc="o.esi_total_debit()" t-options='{"widget":"monetary","display_currency":o.company_id.currency_id}'/></th><th style="text-align:right;"><span t-esc="o.esi_total_credit()" t-options='{"widget":"monetary","display_currency":o.company_id.currency_id}'/></th></tr></tfoot>
+      </table>
+      <div class="row" style="height:150px;margin-top:15px;page-break-inside:avoid;"><div class="col-2" style="padding-top:120px;text-align:center;"><strong>ELABORADO</strong></div><div class="col-2" style="padding-top:120px;text-align:center;"><strong>REVISADO</strong></div><div class="col-2" style="padding-top:120px;text-align:center;"><strong>AUTORIZADO</strong></div><div class="col-6"><div style="text-align:center;font-weight:bold;">CONFORMIDAD</div><div style="margin-top:28px;">Firma: ______________________________</div><div style="margin-top:18px;">Aclaración: __________________________</div><div style="margin-top:18px;">Documento: __________________________</div></div></div>
+    </div>
+  </t></t></t>
+</template>
+</odoo>

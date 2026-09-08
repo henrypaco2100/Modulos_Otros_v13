@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_dialysis_patient_tree" model="ir.ui.view">
+        <field name="name">dialysis.patient.tree</field>
+        <field name="model">dialysis.patient</field>
+        <field name="arch" type="xml">
+            <tree string="Pacientes de Hemodiálisis">
+                <field name="partner_id"/>
+                <field name="medical_record_number"/>
+                <field name="dry_weight"/>
+                <field name="vascular_access"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="view_dialysis_patient_form" model="ir.ui.view">
+        <field name="name">dialysis.patient.form</field>
+        <field name="model">dialysis.patient</field>
+        <field name="arch" type="xml">
+            <form string="Paciente de Hemodiálisis">
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="partner_id"/>
+                            <field name="medical_record_number"/>
+                        </group>
+                        <group>
+                            <field name="dry_weight"/>
+                            <field name="vascular_access"/>
+                            <field name="active"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Sesiones">
+                            <field name="session_ids" readonly="1" nolabel="1">
+                                <tree>
+                                    <field name="name"/>
+                                    <field name="session_date"/>
+                                    <field name="shift"/>
+                                    <field name="chair"/>
+                                    <field name="state"/>
+                                </tree>
+                            </field>
+                        </page>
+                        <page string="Observaciones">
+                            <field name="clinical_notes" placeholder="Observaciones generales del seguimiento..."/>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_dialysis_patient_search" model="ir.ui.view">
+        <field name="name">dialysis.patient.search</field>
+        <field name="model">dialysis.patient</field>
+        <field name="arch" type="xml">
+            <search string="Buscar pacientes">
+                <field name="partner_id"/>
+                <field name="medical_record_number"/>
+                <filter string="Activos" name="active" domain="[('active', '=', True)]"/>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_dialysis_patient" model="ir.actions.act_window">
+        <field name="name">Pacientes</field>
+        <field name="res_model">dialysis.patient</field>
+        <field name="view_mode">tree,form</field>
+        <field name="search_view_id" ref="view_dialysis_patient_search"/>
+    </record>
+</odoo>
