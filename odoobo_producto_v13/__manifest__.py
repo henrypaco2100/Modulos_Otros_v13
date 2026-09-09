@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     "name": "ESI - Campos Adicionales de Producto",
-    "version": "13.0.1.0.0",
+    "version": "13.0.1.1.0",
     "category": "Sales/Products",
     "summary": "Cinco campos de producto con etiquetas configurables",
     "description": "Añade cinco campos de texto a productos y variantes; sus nombres pueden configurarse por administradores.",

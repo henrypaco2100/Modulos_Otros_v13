@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     "name": "ESI - Comprobante Contable",
-    "version": "13.0.1.0.0",
+    "version": "13.0.1.4.0",
     "category": "Accounting/Accounting",
     "summary": "Comprobante contable dinámico con vista previa y PDF",
     "description": "Comprobante contable independiente para Odoo 13 Community.",

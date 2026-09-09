@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_esi_purchase_report_wizard_form" model="ir.ui.view">
+        <field name="name">esi.purchase.report.wizard.form</field>
+        <field name="model">esi.purchase.report.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Informes de Compras ESI">
+                <sheet>
+                    <group>
+                        <group string="Período">
+                            <field name="company_id" groups="base.group_multi_company"/>
+                            <field name="period_mode"/>
+                            <field name="date_from" attrs="{'invisible': [('period_mode', '!=', 'range')], 'required': [('period_mode', '=', 'range')]}"/>
+                            <field name="date_to" attrs="{'invisible': [('period_mode', '!=', 'range')], 'required': [('period_mode', '=', 'range')]}"/>
+                            <field name="day_date" attrs="{'invisible': [('period_mode', '!=', 'day')]}"/>
+                            <field name="month" attrs="{'invisible': [('period_mode', '!=', 'month')]}"/>
+                            <field name="year" attrs="{'invisible': [('period_mode', 'not in', ('month', 'year'))]}"/>
+                        </group>
+                        <group string="Análisis">
+                            <field name="analysis_type"/>
+                            <field name="group_by" attrs="{'invisible': [('analysis_type', '!=', 'standard')]}"/>
+                            <field name="ranking_by" attrs="{'invisible': [('analysis_type', '!=', 'ranking')], 'required': [('analysis_type', '=', 'ranking')]}"/>
+                            <field name="top_n" attrs="{'invisible': [('analysis_type', '!=', 'ranking')]}"/>
+                            <field name="evolution_granularity" attrs="{'invisible': [('analysis_type', '!=', 'evolution')]}"/>
+                            <field name="amount_basis"/>
+                            <field name="state_filter"/>
+                        </group>
+                    </group>
+                    <group string="Filtros opcionales" col="3">
+                        <field name="product_ids" widget="many2many_tags" options="{'no_create': True}"/>
+                        <field name="partner_ids" widget="many2many_tags" options="{'no_create': True}"/>
+                        <field name="user_ids" widget="many2many_tags" options="{'no_create': True}"/>
+                    </group>
+                    <div class="alert alert-info" role="alert">
+                        <strong>ESI:</strong> Ranking/Concentración permite detectar dependencia de proveedores y clasificación ABC; Evolución muestra subidas/bajadas por período; Variación de Precio compara promedio, mínimo, máximo y último costo por producto.
+                    </div>
+                    <separator string="Vista previa" attrs="{'invisible': [('preview_html', '=', False)]}"/>
+                    <field name="preview_html" nolabel="1" attrs="{'invisible': [('preview_html', '=', False)]}"/>
+                    <field name="excel_file" invisible="1"/>
+                    <field name="excel_filename" invisible="1"/>
+                </sheet>
+                <footer>
+                    <button name="action_view_report" type="object" string="Ver" class="btn-primary"/>
+                    <button name="action_print_pdf" type="object" string="Descargar PDF" class="btn-secondary"/>
+                    <button name="action_export_excel" type="object" string="Descargar Excel" class="btn-secondary"/>
+                    <button string="Cerrar" special="cancel" class="btn-link"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_esi_purchase_report" model="ir.actions.act_window">
+        <field name="name">Informes de Compras</field>
+        <field name="res_model">esi.purchase.report.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="view_id" ref="view_esi_purchase_report_wizard_form"/>
+        <field name="target">new</field>
+    </record>
+
+    <menuitem id="menu_esi_purchase_report"
+              name="Informes de Compras"
+              parent="purchase.purchase_report"
+              action="action_esi_purchase_report"
+              sequence="20"
+              groups="purchase.group_purchase_user"/>
+</odoo>

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     "name": "ESI - Reportes de Remisión",
-    "version": "13.0.1.0.0",
+    "version": "13.0.1.3.0",
     "category": "Inventory/Inventory",
     "summary": "Remisión, consignaciones, materiales y devoluciones",
     "description": "Seis reportes independientes para transferencias de inventario en Odoo 13 Community.",

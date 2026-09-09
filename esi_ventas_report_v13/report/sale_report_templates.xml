@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="paperformat_esi_sale_landscape" model="report.paperformat">
+        <field name="name">ESI Ventas A4 Horizontal</field>
+        <field name="default" eval="False"/>
+        <field name="format">A4</field>
+        <field name="page_height">0</field>
+        <field name="page_width">0</field>
+        <field name="orientation">Landscape</field>
+        <field name="margin_top">10</field>
+        <field name="margin_bottom">10</field>
+        <field name="margin_left">8</field>
+        <field name="margin_right">8</field>
+        <field name="header_line" eval="False"/>
+        <field name="header_spacing">5</field>
+        <field name="dpi">90</field>
+    </record>
+
+    <record id="action_report_esi_sale_pdf" model="ir.actions.report">
+        <field name="name">Informe de Ventas ESI</field>
+        <field name="model">esi.sale.report.wizard</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">esi_ventas_report_v13.report_esi_sale_document</field>
+        <field name="report_file">esi_ventas_report_v13.report_esi_sale_document</field>
+        <field name="paperformat_id" ref="paperformat_esi_sale_landscape"/>
+        <field name="print_report_name">'Informe_Ventas_%s_%s' % (object.date_from or '', object.date_to or '')</field>
+    </record>
+
+    <template id="report_esi_sale_document">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="o">
+                <t t-set="d" t-value="o._build_report_data()"/>
+                <div class="page" style="font-family:Arial,sans-serif;font-size:9px;">
+                    <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+                        <div><img t-if="d['company'].logo" t-att-src="image_data_uri(d['company'].logo)" style="max-height:65px;max-width:220px;"/></div>
+                        <div style="text-align:right;"><strong t-esc="d['company'].display_name"/><br/><span t-esc="d['company'].country_id.name or ''"/></div>
+                    </div>
+                    <h2 style="text-align:center;color:#3f4b57;margin:12px 0;" t-esc="d['title']"/>
+                    <table style="width:100%;margin-bottom:8px;font-size:9px;">
+                        <tr><td><strong>Compañía:</strong> <span t-esc="d['company'].display_name"/></td><td><strong>Rango:</strong> <span t-esc="d['period']"/></td></tr>
+                        <tr>
+                            <td>
+                                <t t-if="d['analysis_type'] == 'standard'"><strong>Agrupado por:</strong> <span t-esc="d['group_label']"/></t>
+                                <t t-if="d['analysis_type'] != 'standard'"><strong>Análisis:</strong> <span t-esc="d['analysis_label']"/></t>
+                            </td>
+                            <td><strong>Importe:</strong> <span t-esc="d['amount_label']"/> | <strong>Estado:</strong> <span t-esc="d['state_label']"/></td>
+                        </tr>
+                    </table>
+                    <div style="margin-bottom:6px;"><strong>Pedidos incluidos:</strong> <span t-esc="d['order_count']"/> | <strong>Moneda:</strong> <span t-esc="d['currency'].name"/></div>
+
+                    <!-- ESI reporte consolidado original -->
+                    <t t-if="d['analysis_type'] == 'standard'">
+                        <t t-if="not d['groups']"><div style="border:1px solid #bbb;padding:25px;text-align:center;">No se encontraron ventas con los filtros seleccionados.</div></t>
+                        <t t-foreach="d['groups']" t-as="g">
+                            <div t-if="o.group_by != 'product'" style="background:#eef3f7;border:1px solid #b8c3cc;padding:5px 7px;margin-top:9px;font-weight:bold;"><span t-esc="d['group_label']"/>: <span t-esc="g['name']"/></div>
+                            <table style="border-collapse:collapse;width:100%;font-size:8px;page-break-inside:auto;">
+                                <thead>
+                                    <tr style="background:#e7edf3;">
+                                        <th style="border:1px solid #89949e;padding:4px;width:30px;">Nro</th>
+                                        <th style="border:1px solid #89949e;padding:4px;text-align:left;">PRODUCTO</th>
+                                        <th style="border:1px solid #89949e;padding:4px;">UDM</th>
+                                        <th style="border:1px solid #89949e;padding:4px;text-align:right;">CANTIDAD</th>
+                                        <th style="border:1px solid #89949e;padding:4px;text-align:right;">TOTAL VENTA</th>
+                                        <th t-if="d['show_admin']" style="border:1px solid #89949e;padding:4px;text-align:right;">COSTO ESTIMADO</th>
+                                        <th t-if="d['show_admin']" style="border:1px solid #89949e;padding:4px;text-align:right;">MARGEN APROX.</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr t-foreach="g['rows']" t-as="r">
+                                        <td style="border:1px solid #aab2b9;padding:3px;text-align:center;"><span t-esc="r_index + 1"/></td>
+                                        <td style="border:1px solid #aab2b9;padding:3px;"><span t-esc="r['product']"/></td>
+                                        <td style="border:1px solid #aab2b9;padding:3px;text-align:center;"><span t-esc="r['uom']"/></td>
+                                        <td style="border:1px solid #aab2b9;padding:3px;text-align:right;"><span t-esc="o._fmt_qty(r['qty'])"/></td>
+                                        <td style="border:1px solid #aab2b9;padding:3px;text-align:right;"><span t-esc="o._fmt_money(r['amount'])"/></td>
+                                        <td t-if="d['show_admin']" style="border:1px solid #aab2b9;padding:3px;text-align:right;"><span t-esc="o._fmt_money(r['cost'])"/></td>
+                                        <td t-if="d['show_admin']" style="border:1px solid #aab2b9;padding:3px;text-align:right;"><span t-esc="o._fmt_money(r['margin'])"/></td>
+                                    </tr>
+                                    <tr style="font-weight:bold;background:#f7f8f9;">
+                                        <td colspan="3" style="border:1px solid #89949e;padding:4px;text-align:right;">SUBTOTAL</td>
+                                        <td style="border:1px solid #89949e;padding:4px;text-align:right;"><span t-esc="o._fmt_qty(g['qty'])"/></td>
+                                        <td style="border:1px solid #89949e;padding:4px;text-align:right;"><span t-esc="o._fmt_money(g['amount'])"/></td>
+                                        <td t-if="d['show_admin']" style="border:1px solid #89949e;padding:4px;text-align:right;"><span t-esc="o._fmt_money(g['cost'])"/></td>
+                                        <td t-if="d['show_admin']" style="border:1px solid #89949e;padding:4px;text-align:right;"><span t-esc="o._fmt_money(g['margin'])"/></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </t>
+                        <table t-if="d['groups']" style="border-collapse:collapse;width:100%;font-size:9px;margin-top:10px;font-weight:bold;">
+                            <tr style="background:#dfe7ee;">
+                                <td style="border:1px solid #7f8b94;padding:6px;">TOTAL GENERAL</td>
+                                <td style="border:1px solid #7f8b94;padding:6px;text-align:right;">Cantidad: <span t-esc="o._fmt_qty(d['totals']['qty'])"/></td>
+                                <td style="border:1px solid #7f8b94;padding:6px;text-align:right;">Venta: <span t-esc="o._fmt_money(d['totals']['amount'])"/> <span t-esc="d['currency'].name"/></td>
+                                <td t-if="d['show_admin']" style="border:1px solid #7f8b94;padding:6px;text-align:right;">Costo: <span t-esc="o._fmt_money(d['totals']['cost'])"/></td>
+                                <td t-if="d['show_admin']" style="border:1px solid #7f8b94;padding:6px;text-align:right;">Margen: <span t-esc="o._fmt_money(d['totals']['margin'])"/></td>
+                            </tr>
+                        </table>
+                    </t>
+
+                    <!-- ESI tablas genéricas para Ranking, Evolución y Precios/Margen -->
+                    <t t-if="d['analysis_type'] != 'standard'">
+                        <table t-if="d['summary']" style="border-collapse:collapse;width:100%;font-size:8px;margin:6px 0 10px;">
+                            <tr>
+                                <td t-foreach="d['summary']" t-as="s" style="border:1px solid #b8c3cc;background:#f4f7f9;padding:5px;">
+                                    <strong t-esc="s['label']"/>: <span t-esc="o._format_analysis_value(s['value'], s['type'])"/>
+                                </td>
+                            </tr>
+                        </table>
+                        <t t-if="not d['analysis_rows']"><div style="border:1px solid #bbb;padding:25px;text-align:center;">No se encontraron ventas con los filtros seleccionados.</div></t>
+                        <table t-if="d['analysis_rows']" style="border-collapse:collapse;width:100%;font-size:7.5px;page-break-inside:auto;">
+                            <thead><tr style="background:#e7edf3;">
+                                <th t-foreach="d['analysis_columns']" t-as="c" t-att-style="'border:1px solid #89949e;padding:4px;text-align:%s;' % c.get('align', 'left')"><span t-esc="c['label']"/></th>
+                            </tr></thead>
+                            <tbody>
+                                <tr t-foreach="d['analysis_rows']" t-as="r">
+                                    <td t-foreach="d['analysis_columns']" t-as="c" t-att-style="'border:1px solid #aab2b9;padding:3px;text-align:%s;' % c.get('align', 'left')"><span t-esc="o._format_analysis_value(r.get(c['key']), c['type'])"/></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </t>
+                    <p t-if="d['note']" style="font-size:7px;color:#666;margin-top:8px;" t-esc="d['note']"/>
+                </div>
+            </t>
+        </t>
+    </template>
+</odoo>

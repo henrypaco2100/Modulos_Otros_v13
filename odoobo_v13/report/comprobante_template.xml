@@ -1,20 +1,159 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-<template id="comprobante_contable_document">
-  <t t-call="web.html_container"><t t-foreach="docs" t-as="o"><t t-call="web.external_layout">
-    <div class="page" style="font-size:11px;color:#000;">
-      <h3 style="text-align:center;text-decoration:underline;margin:8px 0 12px;">COMPROBANTE CONTABLE</h3>
-      <div class="row" style="margin-bottom:12px;">
-        <div class="col-6"><table style="width:100%;"><tr><td style="width:25%;">FECHA:</td><td><strong t-esc="o.esi_date_in_words()"/></td></tr><tr><td>USUARIO:</td><td><strong t-esc="o.create_uid.name"/></td></tr><tr><td>SEÑORES:</td><td><strong t-esc="o.partner_id.name or ''"/></td></tr><tr><td>GLOSA:</td><td><strong t-esc="o.ref or ''"/></td></tr></table></div>
-        <div class="col-6"><table style="width:100%;"><tr><td style="width:28%;">TIPO:</td><td><strong t-esc="o.journal_id.name"/></td></tr><tr><td>NÚMERO:</td><td><strong t-esc="o.name"/></td></tr><tr t-if="o.esi_check_number"><td>CHEQUE:</td><td><strong t-esc="o.esi_check_number"/></td></tr><tr><td>IMPORTE:</td><td><strong t-esc="o.esi_total_debit()" t-options='{"widget":"monetary","display_currency":o.company_id.currency_id}'/></td></tr></table></div>
-      </div>
-      <table class="table table-sm table-bordered" style="width:100%;table-layout:fixed;font-size:10px;">
-        <thead><tr style="text-align:center;background:#e9ecef;"><th style="width:20%;">CUENTA</th><th style="width:14%;">EMPRESA</th><th>DESCRIPCIÓN</th><th t-if="o.esi_show_analytic" style="width:15%;">ANALÍTICA</th><th t-if="o.esi_show_line_date" style="width:10%;">FECHA</th><th style="width:10%;">DEBE</th><th style="width:10%;">HABER</th></tr></thead>
-        <tbody><tr t-foreach="o.esi_ordered_lines()" t-as="line"><td><span t-esc="line.account_id.code"/> <span t-esc="line.account_id.name"/></td><td t-esc="line.partner_id.name or ''"/><td t-esc="line.name or ''"/><td t-if="o.esi_show_analytic" t-esc="line.analytic_account_id.display_name if line.analytic_account_id else ''"/><td t-if="o.esi_show_line_date" style="text-align:center;"><span t-field="line.date"/></td><td style="text-align:right;"><span t-field="line.debit"/></td><td style="text-align:right;"><span t-field="line.credit"/></td></tr></tbody>
-        <tfoot><tr style="background:#e9ecef;"><th>TOTAL</th><th t-att-colspan="2 + (1 if o.esi_show_analytic else 0) + (1 if o.esi_show_line_date else 0)">SON: <span t-esc="o.esi_amount_in_words()"/></th><th style="text-align:right;"><span t-esc="o.esi_total_debit()" t-options='{"widget":"monetary","display_currency":o.company_id.currency_id}'/></th><th style="text-align:right;"><span t-esc="o.esi_total_credit()" t-options='{"widget":"monetary","display_currency":o.company_id.currency_id}'/></th></tr></tfoot>
-      </table>
-      <div class="row" style="height:150px;margin-top:15px;page-break-inside:avoid;"><div class="col-2" style="padding-top:120px;text-align:center;"><strong>ELABORADO</strong></div><div class="col-2" style="padding-top:120px;text-align:center;"><strong>REVISADO</strong></div><div class="col-2" style="padding-top:120px;text-align:center;"><strong>AUTORIZADO</strong></div><div class="col-6"><div style="text-align:center;font-weight:bold;">CONFORMIDAD</div><div style="margin-top:28px;">Firma: ______________________________</div><div style="margin-top:18px;">Aclaración: __________________________</div><div style="margin-top:18px;">Documento: __________________________</div></div></div>
-    </div>
-  </t></t></t>
-</template>
+    <!--
+        ESI corrección 2026-09-08:
+        - Se elimina el uso de .row/.col-* de Bootstrap en el PDF porque wkhtmltopdf
+          puede apilar las columnas y reducir visualmente el contenido.
+        - Se usan tablas de ancho completo y medidas físicas (mm/pt) para conservar
+          proporciones, márgenes y alineación tanto en Vista HTML como en PDF.
+        - Cabecera con logo e información de la compañía tomada directamente de Odoo.
+    -->
+    <template id="esi_company_header">
+        <t t-set="company" t-value="o.company_id"/>
+        <table style="width:100%; border-collapse:collapse; border:0; table-layout:fixed; margin:0 0 2.5mm 0;">
+            <tr style="height:23mm;">
+                <td style="width:50%; vertical-align:top; border:0; padding:2mm 0 0 5mm;">
+                    <img t-if="company.logo"
+                         t-att-src="image_data_uri(company.logo)"
+                         alt="Logo"
+                         style="max-height:16mm; max-width:42mm; width:auto; height:auto;"/>
+                </td>
+                <td style="width:50%; vertical-align:top; text-align:right; border:0; padding:1mm 4mm 0 0; font-size:8pt; line-height:1.45;">
+                    <div style="font-weight:700; font-size:8.5pt;" t-esc="company.name or ''"/>
+                    <div t-if="company.vat"><strong>NIT: </strong><span t-esc="company.vat"/></div>
+                    <div t-if="company.phone"><strong>Tel: </strong><span t-esc="company.phone"/></div>
+                    <div t-if="company.partner_id.city or company.partner_id.country_id">
+                        <span t-esc="company.partner_id.city or ''"/>
+                        <t t-if="company.partner_id.city and company.partner_id.country_id"> - </t>
+                        <span t-esc="company.partner_id.country_id.name or ''"/>
+                    </div>
+                </td>
+            </tr>
+        </table>
+    </template>
+
+    <template id="comprobante_contable_document">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="o">
+                <div class="page" style="width:100% !important; max-width:none !important; margin:0 !important; padding:0 !important; color:#000; font-family:Arial, Helvetica, sans-serif; font-size:8.5pt;">
+                    <t t-call="odoobo_v13.esi_company_header"/>
+
+                    <div style="width:100%; text-align:center; margin:0 0 3.5mm 0;">
+                        <span style="font-size:11.5pt; font-weight:400; text-decoration:underline;">COMPROBANTE CONTABLE</span>
+                    </div>
+
+                    <!-- ESI corrección: bloque fijo de dos columnas, no usa Bootstrap. -->
+                    <!-- ESI corrección: CHEQUE solo se muestra cuando existe valor. -->
+                    <table style="width:92%; margin:0 auto 5mm auto; border-collapse:collapse; border:0; table-layout:fixed; font-size:8.5pt; line-height:1.45;">
+                        <colgroup>
+                            <col style="width:11%;"/>
+                            <col style="width:39%;"/>
+                            <col style="width:11%;"/>
+                            <col style="width:39%;"/>
+                        </colgroup>
+                        <tr>
+                            <td style="border:0; padding:0.35mm 0;">FECHA:</td>
+                            <td style="border:0; padding:0.35mm 1mm;"><strong t-esc="o.esi_date_in_words()"/></td>
+                            <td style="border:0; padding:0.35mm 0;">TIPO:</td>
+                            <td style="border:0; padding:0.35mm 1mm;"><strong t-esc="o.journal_id.name"/></td>
+                        </tr>
+                        <tr>
+                            <td style="border:0; padding:0.35mm 0;">USUARIO:</td>
+                            <td style="border:0; padding:0.35mm 1mm;"><strong t-esc="o.create_uid.name"/></td>
+                            <td style="border:0; padding:0.35mm 0;">NÚMERO:</td>
+                            <td style="border:0; padding:0.35mm 1mm;"><strong t-esc="o.name"/></td>
+                        </tr>
+                        <tr>
+                            <td style="border:0; padding:0.35mm 0;">SEÑORES:</td>
+                            <td style="border:0; padding:0.35mm 1mm;"><strong t-esc="o.partner_id.name or ''"/></td>
+                            <t t-if="o.esi_check_number">
+                                <td style="border:0; padding:0.35mm 0;">CHEQUE:</td>
+                                <td style="border:0; padding:0.35mm 1mm;"><strong t-esc="o.esi_check_number"/></td>
+                            </t>
+                            <t t-else="">
+                                <td style="border:0; padding:0.35mm 0;"></td>
+                                <td style="border:0; padding:0.35mm 1mm;"></td>
+                            </t>
+                        </tr>
+                        <tr>
+                            <td style="border:0; padding:0.35mm 0;">GLOSA:</td>
+                            <td style="border:0; padding:0.35mm 1mm;"><strong t-esc="o.ref or ''"/></td>
+                            <td style="border:0; padding:0.35mm 0;">IMPORTE:</td>
+                            <td style="border:0; padding:0.35mm 1mm;">
+                                <strong t-esc="o.esi_total_debit()" t-options='{"widget":"monetary","display_currency":o.company_id.currency_id}'/>
+                            </td>
+                        </tr>
+                    </table>
+
+                    <!-- ESI corrección: tabla principal ocupa todo el ancho útil del papel. -->
+                    <table style="width:100% !important; max-width:none !important; margin:0; border-collapse:collapse; table-layout:fixed; font-size:7.2pt; line-height:1.25;">
+                        <thead>
+                            <tr style="text-align:center; background:#e6e9ed; font-weight:700;">
+                                <th style="width:19%; border:0.45pt solid #444; padding:1.15mm 0.8mm;">CUENTA</th>
+                                <th style="width:14%; border:0.45pt solid #444; padding:1.15mm 0.8mm;">EMPRESA</th>
+                                <th style="border:0.45pt solid #444; padding:1.15mm 0.8mm;">DESCRIPCIÓN</th>
+                                <th t-if="o.esi_show_analytic" style="width:15%; border:0.45pt solid #444; padding:1.15mm 0.8mm;">ANALÍTICA</th>
+                                <th t-if="o.esi_show_line_date" style="width:10%; border:0.45pt solid #444; padding:1.15mm 0.8mm;">FECHA</th>
+                                <th style="width:9%; border:0.45pt solid #444; padding:1.15mm 0.8mm;">DEBE</th>
+                                <th style="width:9%; border:0.45pt solid #444; padding:1.15mm 0.8mm;">HABER</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr t-foreach="o.esi_ordered_lines()" t-as="line">
+                                <td style="border:0.45pt solid #444; padding:1mm 0.8mm; word-wrap:break-word;">
+                                    <span t-esc="line.account_id.code"/> <span t-esc="line.account_id.name"/>
+                                </td>
+                                <td style="border:0.45pt solid #444; padding:1mm 0.8mm; word-wrap:break-word;" t-esc="line.partner_id.name or ''"/>
+                                <td style="border:0.45pt solid #444; padding:1mm 0.8mm; word-wrap:break-word;" t-esc="line.name or ''"/>
+                                <td t-if="o.esi_show_analytic" style="border:0.45pt solid #444; padding:1mm 0.8mm; word-wrap:break-word;" t-esc="line.analytic_account_id.display_name if line.analytic_account_id else ''"/>
+                                <td t-if="o.esi_show_line_date" style="border:0.45pt solid #444; padding:1mm 0.8mm; text-align:center;"><span t-field="line.date"/></td>
+                                <td style="border:0.45pt solid #444; padding:1mm 0.8mm; text-align:right; white-space:nowrap;"><span t-field="line.debit"/></td>
+                                <td style="border:0.45pt solid #444; padding:1mm 0.8mm; text-align:right; white-space:nowrap;"><span t-field="line.credit"/></td>
+                            </tr>
+                        </tbody>
+                        <tfoot>
+                            <tr style="background:#e6e9ed; font-weight:700;">
+                                <td style="border:0.45pt solid #444; padding:1.15mm 0.8mm;">TOTAL</td>
+                                <td t-att-colspan="2 + (1 if o.esi_show_analytic else 0) + (1 if o.esi_show_line_date else 0)" style="border:0.45pt solid #444; padding:1.15mm 0.8mm; text-align:left;">
+                                    SON: <span t-esc="o.esi_amount_in_words()"/>
+                                </td>
+                                <td style="border:0.45pt solid #444; padding:1.15mm 0.8mm; text-align:right; white-space:nowrap;">
+                                    <span t-esc="o.esi_total_debit()" t-options='{"widget":"monetary","display_currency":o.company_id.currency_id}'/>
+                                </td>
+                                <td style="border:0.45pt solid #444; padding:1.15mm 0.8mm; text-align:right; white-space:nowrap;">
+                                    <span t-esc="o.esi_total_credit()" t-options='{"widget":"monetary","display_currency":o.company_id.currency_id}'/>
+                                </td>
+                            </tr>
+                        </tfoot>
+                    </table>
+
+                    <!-- ESI corrección: firmas en una sola tabla para evitar saltos y desalineación. -->
+                    <table style="width:94%; margin:7mm auto 0 auto; border-collapse:collapse; border:0; table-layout:fixed; page-break-inside:avoid; font-size:8pt;">
+                        <tr style="height:40mm;">
+                            <td style="width:18%; border:0; text-align:center; vertical-align:bottom; padding-bottom:1mm;"><strong>ELABORADO</strong></td>
+                            <td style="width:18%; border:0; text-align:center; vertical-align:bottom; padding-bottom:1mm;"><strong>REVISADO</strong></td>
+                            <td style="width:18%; border:0; text-align:center; vertical-align:bottom; padding-bottom:1mm;"><strong>AUTORIZADO</strong></td>
+                            <td style="width:46%; border:0; vertical-align:top; padding-left:5mm;">
+                                <div style="text-align:center; font-weight:700; margin-bottom:8mm;">CONFORMIDAD</div>
+                                <table style="width:100%; border-collapse:collapse; border:0; font-size:8pt;">
+                                    <tr>
+                                        <td style="width:24%; border:0; padding:0 0 4mm 0;">Firma:</td>
+                                        <td style="border:0; border-bottom:0.6pt solid #222; padding:0 0 4mm 0;"></td>
+                                    </tr>
+                                    <tr>
+                                        <td style="border:0; padding:4mm 0;">Aclaración:</td>
+                                        <td style="border:0; border-bottom:0.6pt solid #222; padding:4mm 0;"></td>
+                                    </tr>
+                                    <tr>
+                                        <td style="border:0; padding:4mm 0 0 0;">Documento:</td>
+                                        <td style="border:0; border-bottom:0.6pt solid #222; padding:4mm 0 0 0;"></td>
+                                    </tr>
+                                </table>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+            </t>
+        </t>
+    </template>
 </odoo>

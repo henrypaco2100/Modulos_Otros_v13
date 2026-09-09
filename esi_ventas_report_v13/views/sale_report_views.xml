@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_esi_sale_report_wizard_form" model="ir.ui.view">
+        <field name="name">esi.sale.report.wizard.form</field>
+        <field name="model">esi.sale.report.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Informes de Ventas ESI">
+                <sheet>
+                    <field name="admin_mode" invisible="1"/>
+                    <group>
+                        <group string="Período">
+                            <field name="company_id" groups="base.group_multi_company"/>
+                            <field name="period_mode"/>
+                            <field name="date_from" attrs="{'invisible': [('period_mode', '!=', 'range')], 'required': [('period_mode', '=', 'range')]}"/>
+                            <field name="date_to" attrs="{'invisible': [('period_mode', '!=', 'range')], 'required': [('period_mode', '=', 'range')]}"/>
+                            <field name="day_date" attrs="{'invisible': [('period_mode', '!=', 'day')]}"/>
+                            <field name="month" attrs="{'invisible': [('period_mode', '!=', 'month')]}"/>
+                            <field name="year" attrs="{'invisible': [('period_mode', 'not in', ('month', 'year'))]}"/>
+                        </group>
+                        <group string="Análisis">
+                            <field name="analysis_type"/>
+                            <field name="group_by" attrs="{'invisible': [('analysis_type', '!=', 'standard')]}"/>
+                            <field name="ranking_by" attrs="{'invisible': [('analysis_type', '!=', 'ranking')], 'required': [('analysis_type', '=', 'ranking')]}"/>
+                            <field name="top_n" attrs="{'invisible': [('analysis_type', '!=', 'ranking')]}"/>
+                            <field name="evolution_granularity" attrs="{'invisible': [('analysis_type', '!=', 'evolution')]}"/>
+                            <field name="amount_basis"/>
+                            <field name="state_filter"/>
+                        </group>
+                    </group>
+                    <group string="Filtros opcionales" col="3">
+                        <field name="product_ids" widget="many2many_tags" options="{'no_create': True}"/>
+                        <field name="partner_ids" widget="many2many_tags" options="{'no_create': True}"/>
+                        <field name="user_ids" widget="many2many_tags" options="{'no_create': True}"/>
+                    </group>
+                    <div class="alert alert-info" role="alert">
+                        <strong>ESI:</strong> Ranking/Pareto muestra participación y clasificación ABC; Evolución detecta tendencias por día/semana/mes; Precios y Descuentos analiza el precio efectivo por producto. En el menú administrativo también se muestran costo y margen aproximado.
+                    </div>
+                    <separator string="Vista previa" attrs="{'invisible': [('preview_html', '=', False)]}"/>
+                    <field name="preview_html" nolabel="1" attrs="{'invisible': [('preview_html', '=', False)]}"/>
+                    <field name="excel_file" invisible="1"/>
+                    <field name="excel_filename" invisible="1"/>
+                </sheet>
+                <footer>
+                    <button name="action_view_report" type="object" string="Ver" class="btn-primary"/>
+                    <button name="action_print_pdf" type="object" string="Descargar PDF" class="btn-secondary"/>
+                    <button name="action_export_excel" type="object" string="Descargar Excel" class="btn-secondary"/>
+                    <button string="Cerrar" special="cancel" class="btn-link"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_esi_sale_report" model="ir.actions.act_window">
+        <field name="name">Informes de Ventas</field>
+        <field name="res_model">esi.sale.report.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="view_id" ref="view_esi_sale_report_wizard_form"/>
+        <field name="target">new</field>
+        <field name="context">{'default_admin_mode': False, 'admin_mode': False}</field>
+    </record>
+
+    <record id="action_esi_sale_report_admin" model="ir.actions.act_window">
+        <field name="name">Análisis de Ventas (Admin)</field>
+        <field name="res_model">esi.sale.report.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="view_id" ref="view_esi_sale_report_wizard_form"/>
+        <field name="target">new</field>
+        <field name="context">{'default_admin_mode': True, 'admin_mode': True}</field>
+    </record>
+
+    <menuitem id="menu_esi_sale_report"
+              name="Informes de Ventas"
+              parent="sale.menu_sale_report"
+              action="action_esi_sale_report"
+              sequence="20"
+              groups="sales_team.group_sale_salesman"/>
+
+    <menuitem id="menu_esi_sale_report_admin"
+              name="Análisis de Ventas (Admin)"
+              parent="sale.menu_sale_report"
+              action="action_esi_sale_report_admin"
+              sequence="30"
+              groups="base.group_system"/>
+</odoo>

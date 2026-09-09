@@ -24,13 +24,28 @@ class StockPicking(models.Model):
         product = move.product_id.with_context(force_company=self.company_id.id)
         return product.standard_price
 
+    # ESI corrección 2026-09-08:
+    # El PVP mostrado en la remisión corresponde al precio de venta del producto.
+    # IMPORTE TOTAL debe ser CANTIDAD x PVP, no CANTIDAD x COSTO.
+    def esi_unit_pvp(self, move):
+        product = move.product_id.with_context(force_company=self.company_id.id)
+        return product.lst_price
+
+    def esi_line_amount_total(self, move):
+        return self.esi_move_quantity(move) * self.esi_unit_pvp(move)
+
     def esi_line_cost_total(self, move):
+        # Se conserva por compatibilidad con posibles llamadas externas al módulo.
         return self.esi_move_quantity(move) * self.esi_unit_cost(move)
 
     def esi_total_quantity(self):
         return sum(self.esi_move_quantity(move) for move in self.esi_report_moves())
 
+    def esi_total_amount(self):
+        return sum(self.esi_line_amount_total(move) for move in self.esi_report_moves())
+
     def esi_total_cost(self):
+        # Se conserva por compatibilidad; ya no se usa como IMPORTE TOTAL.
         return sum(self.esi_line_cost_total(move) for move in self.esi_report_moves())
 
     def esi_percentage_label(self):
