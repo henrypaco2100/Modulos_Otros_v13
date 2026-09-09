@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'ESI - Informes de Compras',
-    'version': '13.0.2.0.0',
+    'version': '13.0.2.1.0',
     'summary': 'Compras: resumen, Pareto ABC, tendencias y variación de precios en HTML, PDF y Excel',
     'author': 'ESI - Especialistas en Sistemas Integrados',
     'category': 'Purchases/Reporting',

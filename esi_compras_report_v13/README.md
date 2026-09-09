@@ -30,3 +30,7 @@ Versión 13.0.2.0.0
    - Precio promedio, mínimo, máximo y último precio de compra, normalizados a la UDM base.
    - Rango de precio %, último precio vs promedio %, cantidad de proveedores, último proveedor y última fecha.
    - Total comprado por producto.
+
+## Corrección 13.0.2.1.0
+- Corregido error `ValueError: unsupported format character ';'` al usar **Ver** en el informe estándar de compras.
+- La causa era el `width:100%` de CSS dentro de una cadena formateada con el operador `%` de Python.

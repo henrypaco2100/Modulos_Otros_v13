@@ -693,7 +693,14 @@ class EsiPurchaseReportWizard(models.TransientModel):
         if not data['groups']:
             html.append('<div style="padding:25px;border:1px solid #ddd;text-align:center;">No se encontraron compras con los filtros seleccionados.</div>')
         else:
-            html.append('<table style="border-collapse:collapse;width:100%;font-size:12px;margin-top:15px;font-weight:bold;"><tr style="background:#dfe7ee;"><td style="border:1px solid #7f8b94;padding:7px;">TOTAL GENERAL</td><td style="border:1px solid #7f8b94;padding:7px;text-align:right;">Cantidad: %s</td><td style="border:1px solid #7f8b94;padding:7px;text-align:right;">Compra: %s %s</td></tr></table>' % (self._fmt_qty(data['totals']['qty']), self._fmt_money(data['totals']['amount']), escape(currency.name or '')))
+            # ESI corrección: no mezclar el operador %% de Python con el 100%% del CSS.
+            # La cadena se arma por partes para evitar ValueError: unsupported format character ';'.
+            html.append('<table style="border-collapse:collapse;width:100%;font-size:12px;margin-top:15px;font-weight:bold;">')
+            html.append('<tr style="background:#dfe7ee;">')
+            html.append('<td style="border:1px solid #7f8b94;padding:7px;">TOTAL GENERAL</td>')
+            html.append('<td style="border:1px solid #7f8b94;padding:7px;text-align:right;">Cantidad: %s</td>' % self._fmt_qty(data['totals']['qty']))
+            html.append('<td style="border:1px solid #7f8b94;padding:7px;text-align:right;">Compra: %s %s</td>' % (self._fmt_money(data['totals']['amount']), escape(currency.name or '')))
+            html.append('</tr></table>')
         html.append('</div>')
         return ''.join(html)
 

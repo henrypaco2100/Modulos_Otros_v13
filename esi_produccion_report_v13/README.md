@@ -15,3 +15,9 @@ Módulo técnico: `esi_produccion_report_v13`.
 - Si existe `stock_account`, intenta usar capas de valoración para costo real de materiales; si no, usa costo estándar actual como aproximación.
 - Si existe Multi Store, muestra/agrupa por sucursal sin agregar dependencia dura.
 - Seguridad Multi Store: si los campos ESI están presentes, el wizard limita las OF por la sucursal activa/sucursales permitidas del usuario, además de las reglas nativas que ya apliquen.
+
+## Actualización 13.0.2.0.0
+- Smart button **Análisis Producción** en la Orden de Producción, con estilo `oe_stat_button` e icono de gráfico.
+- Abre una vista HTML del análisis individual sin descargar automáticamente.
+- Desde esa vista se puede descargar PDF y Excel.
+- Excel individual con hojas Resumen, Materia Prima y Operaciones.

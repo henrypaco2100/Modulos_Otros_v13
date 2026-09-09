@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # ESI - utilidades de análisis por Orden de Producción.
 
-from odoo import fields, models
+from odoo import fields, models, _
 
 
 class MrpProduction(models.Model):
@@ -157,4 +157,22 @@ class MrpProduction(models.Model):
             'potential_revenue': potential_revenue,
             'potential_margin': potential_margin,
             'margin_pct': margin_pct,
+        }
+
+
+    # ESI mejora: smart button para VER el análisis individual antes de descargarlo.
+    def action_open_esi_production_analysis(self):
+        self.ensure_one()
+        wizard = self.env['esi.production.detail.wizard'].create({
+            'production_id': self.id,
+        })
+        wizard.preview_html = wizard._build_preview_html()
+        return {
+            'type': 'ir.actions.act_window',
+            'name': _('Análisis de Producción - %s') % (self.name or ''),
+            'res_model': 'esi.production.detail.wizard',
+            'res_id': wizard.id,
+            'view_mode': 'form',
+            'view_id': self.env.ref('esi_produccion_report_v13.view_esi_production_detail_wizard_form').id,
+            'target': 'current',
         }
