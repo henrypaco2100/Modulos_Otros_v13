@@ -157,8 +157,8 @@ BOM_INDUSTRIAL = [
 
 
 class EsiDemoCalzadoLoader(models.AbstractModel):
-    _name = 'esi.demo.calzado.loader'
-    _description = 'Cargador Demo ESI - Fábrica de Calzado'
+    _name = 'esi.demo.calzado.promedio.loader'
+    _description = 'Cargador Demo ESI - Fábrica de Calzado AVCO'
 
     @api.model
     def _company_env(self, company):
@@ -176,11 +176,11 @@ class EsiDemoCalzadoLoader(models.AbstractModel):
     @api.model
     def _get_or_create_company(self):
         Company = self.env['res.company'].sudo()
-        company = Company.search([('name', '=', 'Calzados ESI DEMO S.R.L.')], limit=1)
+        company = Company.search([('name', '=', 'Calzados ESI DEMO PROMEDIO S.R.L.')], limit=1)
         bob = self.env['res.currency'].sudo().search([('name', '=', 'BOB')], limit=1)
         country = self.env.ref('base.bo', raise_if_not_found=False)
         vals = {
-            'name': 'Calzados ESI DEMO S.R.L.',
+            'name': 'Calzados ESI DEMO PROMEDIO S.R.L.',
             'esi_avg_monthly_labor_cost': 3300.0,
             'esi_workdays_month': 26.0,
             'esi_hours_day': 8.0,
@@ -217,8 +217,8 @@ class EsiDemoCalzadoLoader(models.AbstractModel):
         warehouse = Warehouse.search([('company_id', '=', company.id)], limit=1)
         if not warehouse:
             warehouse = Warehouse.create({
-                'name': 'Almacén Calzados ESI DEMO',
-                'code': 'ESID',
+                'name': 'Almacén Calzados ESI DEMO AVCO',
+                'code': 'AVCO',
                 'company_id': company.id,
             })
         return warehouse
@@ -231,9 +231,9 @@ class EsiDemoCalzadoLoader(models.AbstractModel):
         meter = self._xmlref(env, 'uom.product_uom_meter', 'uom.uom') or unit
         kg = self._xmlref(env, 'uom.product_uom_kgm', 'uom.uom') or unit
 
-        cat = env['uom.category'].sudo().search([('name', '=', 'ESI Demo - Pares de Calzado')], limit=1)
+        cat = env['uom.category'].sudo().search([('name', '=', 'ESI Demo AVCO - Pares de Calzado')], limit=1)
         if not cat:
-            cat = env['uom.category'].sudo().create({'name': 'ESI Demo - Pares de Calzado'})
+            cat = env['uom.category'].sudo().create({'name': 'ESI Demo AVCO - Pares de Calzado'})
         pair = env['uom.uom'].sudo().search([('name', '=', 'Par'), ('category_id', '=', cat.id)], limit=1)
         if not pair:
             pair = env['uom.uom'].sudo().create({
@@ -246,16 +246,34 @@ class EsiDemoCalzadoLoader(models.AbstractModel):
 
     @api.model
     def _get_or_create_categories(self, env):
+        """Categorías aisladas para la demo AVCO.
+
+        property_cost_method es company_dependent en Odoo 13, por lo que la
+        escritura se realiza con force_company de la compañía demo.
+        """
         Category = env['product.category'].sudo()
-        root = Category.search([('name', '=', 'ESI DEMO - Calzado')], limit=1)
+        root = Category.search([('name', '=', 'ESI DEMO AVCO - Calzado')], limit=1)
         if not root:
-            root = Category.create({'name': 'ESI DEMO - Calzado'})
-        raw = Category.search([('name', '=', 'Materias Primas ESI DEMO'), ('parent_id', '=', root.id)], limit=1)
+            root = Category.create({'name': 'ESI DEMO AVCO - Calzado'})
+        raw = Category.search([('name', '=', 'Materias Primas ESI DEMO AVCO'), ('parent_id', '=', root.id)], limit=1)
         if not raw:
-            raw = Category.create({'name': 'Materias Primas ESI DEMO', 'parent_id': root.id})
-        finished = Category.search([('name', '=', 'Producto Terminado ESI DEMO'), ('parent_id', '=', root.id)], limit=1)
+            raw = Category.create({'name': 'Materias Primas ESI DEMO AVCO', 'parent_id': root.id})
+        finished = Category.search([('name', '=', 'Producto Terminado ESI DEMO AVCO'), ('parent_id', '=', root.id)], limit=1)
         if not finished:
-            finished = Category.create({'name': 'Producto Terminado ESI DEMO', 'parent_id': root.id})
+            finished = Category.create({'name': 'Producto Terminado ESI DEMO AVCO', 'parent_id': root.id})
+
+        # Costo Promedio (AVCO) en TODAS las categorías de la demo.
+        # Dejamos valoración contable manual para no exigir cuentas de stock
+        # antes de crear el plan contable demo; AVCO funciona igualmente sobre
+        # las capas de valoración y actualiza standard_price al recibir compras.
+        for category in (root, raw, finished):
+            vals = {}
+            if 'property_cost_method' in category._fields:
+                vals['property_cost_method'] = 'average'
+            if 'property_valuation' in category._fields:
+                vals['property_valuation'] = 'manual_periodic'
+            if vals:
+                category.with_context(force_company=env.context.get('force_company')).sudo().write(vals)
         return raw, finished
 
     @api.model
@@ -263,70 +281,65 @@ class EsiDemoCalzadoLoader(models.AbstractModel):
         Product = env['product.product'].sudo()
         raw_cat, finished_cat = categories
         products = {}
-        for code, name, cost, _stock, uom_key in RAW_PRODUCTS:
-            product = Product.search([('default_code', '=', code), ('company_id', '=', company.id)], limit=1)
+        for code, name, _cost, _stock, uom_key in RAW_PRODUCTS:
+            avco_code = 'AVCO-' + code
+            product = Product.search([('default_code', '=', avco_code), ('company_id', '=', company.id)], limit=1)
             vals = {
-                'name': name,
-                'default_code': code,
+                'name': '%s [AVCO]' % name,
+                'default_code': avco_code,
                 'type': 'product',
                 'categ_id': raw_cat.id,
                 'uom_id': uoms[uom_key].id,
                 'uom_po_id': uoms[uom_key].id,
-                'standard_price': cost,
                 'company_id': company.id,
                 'purchase_ok': True,
                 'sale_ok': False,
             }
             if not product:
+                # El costo arranca en cero. Las recepciones de compra son las
+                # que deben formar el costo promedio de la demo.
+                vals['standard_price'] = 0.0
                 product = Product.create(vals)
             else:
-                product.write({'standard_price': cost})
+                # Idempotencia: nunca resetear standard_price al recargar la
+                # demo porque destruiría el promedio ya calculado por Odoo.
+                product.write({k: v for k, v in vals.items() if k != 'standard_price'})
             products[code] = product
 
         final_defs = [
-            ('PT-BOTA-LONA', 'BOTA DE LONA M-L-01', 185.00, 82.00),
-            ('PT-BOTA-IND', 'BOTA INDUSTRIAL ESI DEMO', 260.00, 125.00),
+            ('PT-BOTA-LONA', 'BOTA DE LONA M-L-01 [AVCO]', 185.00),
+            ('PT-BOTA-IND', 'BOTA INDUSTRIAL ESI DEMO [AVCO]', 260.00),
         ]
-        for code, name, price, cost in final_defs:
-            product = Product.search([('default_code', '=', code), ('company_id', '=', company.id)], limit=1)
+        for code, name, price in final_defs:
+            avco_code = 'AVCO-' + code
+            product = Product.search([('default_code', '=', avco_code), ('company_id', '=', company.id)], limit=1)
             vals = {
                 'name': name,
-                'default_code': code,
+                'default_code': avco_code,
                 'type': 'product',
                 'categ_id': finished_cat.id,
                 'uom_id': uoms['pair'].id,
                 'uom_po_id': uoms['pair'].id,
-                'standard_price': cost,
                 'lst_price': price,
                 'company_id': company.id,
                 'sale_ok': True,
                 'purchase_ok': False,
-                'description_sale': 'Producto DEMO ESI. Cantidades de LdM demostrativas; procesos/tiempos de Bota de Lona provienen de la planilla de tiempos y costos de destajo.',
+                'description_sale': 'Producto DEMO ESI AVCO. El método de coste de su categoría es Promedio. Procesos/tiempos de Bota de Lona provienen de la planilla entregada.',
             }
             if not product:
+                vals['standard_price'] = 0.0
                 product = Product.create(vals)
             else:
-                product.write({'lst_price': price, 'standard_price': cost})
+                product.write({k: v for k, v in vals.items() if k != 'standard_price'})
             products[code] = product
         return products
 
     @api.model
     def _set_target_stock(self, env, warehouse, products):
-        Quant = env['stock.quant'].sudo()
-        targets = {code: stock for code, _name, _cost, stock, _uom in RAW_PRODUCTS}
-        targets.update({'PT-BOTA-LONA': 20.0, 'PT-BOTA-IND': 8.0})
-        for code, target in targets.items():
-            product = products.get(code)
-            if not product:
-                continue
-            try:
-                current = Quant._get_available_quantity(product, warehouse.lot_stock_id)
-                delta = target - current
-                if abs(delta) > (product.uom_id.rounding or 0.01) / 2.0:
-                    Quant._update_available_quantity(product, warehouse.lot_stock_id, delta)
-            except Exception:
-                # La demo no debe fallar si otro módulo reemplazó la lógica de quant.
-                pass
+        # En la demo AVCO NO inyectamos materias primas directamente en quants.
+        # El inventario debe nacer de compras/recepciones para que el costo
+        # promedio se calcule con movimientos reales de inventario.
+        return True
 
     @api.model
     def _get_or_create_operators(self, env, company):
@@ -511,7 +524,7 @@ class EsiDemoCalzadoLoader(models.AbstractModel):
         loss_type = LossType.search([('loss_type', '=', 'productive')], limit=1)
         if not loss_type:
             loss_type = LossType.create({'loss_type': 'productive'})
-        vals = {'name': 'Tiempo Productivo ESI DEMO', 'loss_id': loss_type.id, 'manual': False}
+        vals = {'name': 'Tiempo Productivo ESI DEMO AVCO', 'loss_id': loss_type.id, 'manual': False}
         return Loss.create(vals)
 
     @api.model
@@ -645,7 +658,7 @@ class EsiDemoCalzadoLoader(models.AbstractModel):
                 'user_id': env.user.id,
                 'date_start': date_start,
                 'date_end': date_end,
-                'description': 'Parte de producción ESI DEMO - %s' % (op.name or ''),
+                'description': 'Parte de producción ESI DEMO AVCO - %s' % (op.name or ''),
                 'esi_operator_id': op.esi_operator_id.id,
                 'esi_area': op.esi_area,
                 'esi_qty_processed': part_qty,
@@ -828,65 +841,101 @@ class EsiDemoCalzadoLoader(models.AbstractModel):
     @api.model
     def _get_or_create_pricelist(self, env, company):
         Pricelist = env['product.pricelist'].sudo()
-        pl = Pricelist.search([('name', '=', 'Tarifa ESI DEMO Bs'), ('company_id', '=', company.id)], limit=1)
+        pl = Pricelist.search([('name', '=', 'Tarifa ESI DEMO AVCO Bs'), ('company_id', '=', company.id)], limit=1)
         if not pl:
             pl = Pricelist.create({
-                'name': 'Tarifa ESI DEMO Bs',
+                'name': 'Tarifa ESI DEMO AVCO Bs',
                 'currency_id': company.currency_id.id,
                 'company_id': company.id,
             })
         return pl
 
     @api.model
+    def _receive_purchase(self, env, po):
+        """Valida completamente las recepciones abiertas de una OC.
+
+        En Odoo 13 el AVCO cambia cuando el movimiento de entrada queda DONE,
+        no simplemente al confirmar la orden de compra.
+        """
+        done_count = 0
+        for picking in po.picking_ids.filtered(lambda p: p.state not in ('done', 'cancel')):
+            if picking.state == 'draft':
+                picking.action_confirm()
+            # En recepciones de proveedor no hace falta reservar stock. Al
+            # asignar quantity_done Odoo crea/actualiza las líneas necesarias.
+            for move in picking.move_lines.filtered(lambda m: m.state not in ('done', 'cancel')):
+                move.quantity_done = move.product_uom_qty
+            picking.with_context(skip_overprocessed_check=True).button_validate()
+            if picking.state == 'done':
+                done_count += 1
+        return done_count
+
+    @api.model
     def _create_purchases(self, env, company, warehouse, partners, products):
         Purchase = env['purchase.order'].sudo()
+
+        # Dos recepciones completas forman el promedio inicial.
+        # Lote 1: 60% de la cantidad objetivo al 90% del costo de referencia.
+        # Lote 2: 40% de la cantidad objetivo al 120% del costo de referencia.
+        # Resultado teórico antes de consumos: 102% del costo de referencia,
+        # claramente diferente de ambos precios de compra.
+        lot1 = []
+        lot2 = []
+        for code, _name, ref_cost, stock_target, _uom_key in RAW_PRODUCTS:
+            lot1.append((code, stock_target * 0.60, ref_cost * 0.90))
+            lot2.append((code, stock_target * 0.40, ref_cost * 1.20))
+
+        # Tercera compra confirmada pero NO recibida: sirve para demostrar en
+        # vivo cómo vuelve a cambiar AVCO al validar la recepción.
+        pending = []
+        for code in ('MP-CUERO', 'MP-LONA', 'MP-SUELA'):
+            ref = next(x for x in RAW_PRODUCTS if x[0] == code)
+            pending.append((code, max(10.0, ref[3] * 0.20), ref[2] * 1.30))
+
         defs = [
-            ('ESI-DEMO-COMPRA-001', partners['PROV-CUERO'], [
-                ('MP-CUERO', 80.0, 40.0), ('MP-LONA', 120.0, 22.0), ('MP-LOBO', 60.0, 20.0),
-            ], True),
-            ('ESI-DEMO-COMPRA-002', partners['PROV-INS'], [
-                ('MP-PEG', 25.0, 36.0), ('MP-SUELA', 100.0, 21.0), ('MP-OJAL', 1000.0, 0.30),
-            ], False),
+            ('ESI-AVCO-COMPRA-001-RECIBIDA', partners['PROV-CUERO'], lot1, True, True, 14),
+            ('ESI-AVCO-COMPRA-002-RECIBIDA', partners['PROV-INS'], lot2, True, True, 10),
+            ('ESI-AVCO-COMPRA-003-PENDIENTE', partners['PROV-CUERO'], pending, True, False, 1),
         ]
         orders = Purchase.browse()
+        received_pickings = 0
         incoming = env['stock.picking.type'].sudo().search([
             ('code', '=', 'incoming'), ('warehouse_id', '=', warehouse.id), ('company_id', '=', company.id)
         ], limit=1)
-        for ref, partner, lines, confirm in defs:
+        for ref, partner, lines, confirm, receive, days_ago in defs:
             po = Purchase.search([('partner_ref', '=', ref), ('company_id', '=', company.id)], limit=1)
             if not po:
                 vals = {
                     'partner_id': partner.id,
                     'company_id': company.id,
                     'partner_ref': ref,
-                    'date_order': fields.Datetime.now() - timedelta(days=10 if confirm else 2),
+                    'date_order': fields.Datetime.now() - timedelta(days=days_ago),
                     'order_line': [(0, 0, {
                         'name': products[code].display_name,
                         'product_id': products[code].id,
                         'product_qty': qty,
                         'product_uom': products[code].uom_po_id.id,
                         'price_unit': price,
-                        'date_planned': fields.Datetime.now() + timedelta(days=2),
+                        'date_planned': fields.Datetime.now() - timedelta(days=max(days_ago - 1, 0)),
                     }) for code, qty, price in lines],
                 }
                 if incoming:
                     vals['picking_type_id'] = incoming.id
                 po = Purchase.create(vals)
-                if confirm:
-                    try:
-                        with env.cr.savepoint():
-                            po.button_confirm()
-                    except Exception:
-                        pass
+
+            if confirm and po.state in ('draft', 'sent'):
+                po.button_confirm()
+            if receive:
+                received_pickings += self._receive_purchase(env, po)
             orders |= po
-        return orders
+        return orders, received_pickings
 
     @api.model
     def _create_sales(self, env, company, warehouse, partners, products, pricelist):
         Sale = env['sale.order'].sudo()
         defs = [
-            ('ESI-DEMO-VENTA-001', partners['CLI-MAY'], [('PT-BOTA-LONA', 30.0, 185.0)], True),
-            ('ESI-DEMO-VENTA-002', partners['CLI-SEG'], [('PT-BOTA-IND', 12.0, 260.0)], False),
+            ('ESI-AVCO-VENTA-001', partners['CLI-MAY'], [('PT-BOTA-LONA', 30.0, 185.0)], True),
+            ('ESI-AVCO-VENTA-002', partners['CLI-SEG'], [('PT-BOTA-IND', 12.0, 260.0)], False),
         ]
         orders = Sale.browse()
         for ref, partner, lines, confirm in defs:
@@ -1005,11 +1054,11 @@ class EsiDemoCalzadoLoader(models.AbstractModel):
     def _create_journals(self, env, company, accounts):
         Journal = env['account.journal'].sudo()
         defs = [
-            ('ESIG', 'Diario General ESI DEMO', 'general', False),
-            ('ESIP', 'Producción ESI DEMO', 'general', False),
-            ('ESIS', 'Ventas ESI DEMO', 'sale', False),
-            ('ESIC', 'Compras ESI DEMO', 'purchase', False),
-            ('ESIB', 'Banco ESI DEMO', 'bank', accounts['110102']),
+            ('AVG', 'Diario General ESI DEMO AVCO', 'general', False),
+            ('AVP', 'Producción ESI DEMO AVCO', 'general', False),
+            ('AVS', 'Ventas ESI DEMO AVCO', 'sale', False),
+            ('AVC', 'Compras ESI DEMO AVCO', 'purchase', False),
+            ('AVB', 'Banco ESI DEMO AVCO', 'bank', accounts['110102']),
         ]
         result = {}
         for code, name, jtype, default_account in defs:
@@ -1031,38 +1080,38 @@ class EsiDemoCalzadoLoader(models.AbstractModel):
         Move = env['account.move'].sudo()
         today = fields.Date.context_today(self)
         entries = [
-            ('ESI-DEMO-APERTURA', journals['ESIG'], today - timedelta(days=30), [
+            ('ESI-AVCO-APERTURA', journals['AVG'], today - timedelta(days=30), [
                 ('Capital inicial - Banco', '110102', 70000.0, 0.0, False),
                 ('Capital inicial - Inventario MP', '110301', 30000.0, 0.0, False),
                 ('Capital Social', '310101', 0.0, 100000.0, False),
             ]),
-            ('ESI-DEMO-COMPRA-CONTABLE', journals['ESIC'], today - timedelta(days=12), [
+            ('ESI-AVCO-COMPRA-CONTABLE', journals['AVC'], today - timedelta(days=12), [
                 ('Compra materias primas', '110301', 8700.0, 0.0, False),
                 ('IVA Crédito Fiscal', '110401', 1131.0, 0.0, False),
                 ('Proveedor por pagar', '210101', 0.0, 9831.0, partners['PROV-CUERO']),
             ]),
-            ('ESI-DEMO-VENTA-CONTABLE', journals['ESIS'], today - timedelta(days=6), [
+            ('ESI-AVCO-VENTA-CONTABLE', journals['AVS'], today - timedelta(days=6), [
                 ('Cliente por cobrar', '110201', 16950.0, 0.0, partners['CLI-MAY']),
                 ('Venta Bota de Lona', '410101', 0.0, 15000.0, False),
                 ('IVA Débito Fiscal', '210301', 0.0, 1950.0, False),
             ]),
-            ('ESI-DEMO-COSTO-VENTA', journals['ESIP'], today - timedelta(days=6), [
+            ('ESI-AVCO-COSTO-VENTA', journals['AVP'], today - timedelta(days=6), [
                 ('Costo de venta Bota de Lona', '520101', 7500.0, 0.0, False),
                 ('Salida producto terminado', '110303', 0.0, 7500.0, False),
             ]),
-            ('ESI-DEMO-DESTAJO-50P', journals['ESIP'], today - timedelta(days=3), [
+            ('ESI-AVCO-DESTAJO-50P', journals['AVP'], today - timedelta(days=3), [
                 ('Destajo serie 50 pares Bota de Lona (27 Bs/par)', '510102', 1350.0, 0.0, False),
                 ('Destajos por pagar', '210201', 0.0, 1350.0, False),
             ]),
-            ('ESI-DEMO-SERVICIOS', journals['ESIG'], today - timedelta(days=4), [
+            ('ESI-AVCO-SERVICIOS', journals['AVG'], today - timedelta(days=4), [
                 ('Servicios básicos fábrica', '610201', 950.0, 0.0, False),
                 ('Pago desde banco', '110102', 0.0, 950.0, False),
             ]),
-            ('ESI-DEMO-PAGO-PROVEEDOR', journals['ESIG'], today - timedelta(days=2), [
+            ('ESI-AVCO-PAGO-PROVEEDOR', journals['AVG'], today - timedelta(days=2), [
                 ('Pago parcial proveedor', '210101', 5000.0, 0.0, partners['PROV-CUERO']),
                 ('Banco', '110102', 0.0, 5000.0, False),
             ]),
-            ('ESI-DEMO-COBRO-CLIENTE', journals['ESIG'], today - timedelta(days=1), [
+            ('ESI-AVCO-COBRO-CLIENTE', journals['AVG'], today - timedelta(days=1), [
                 ('Banco', '110102', 8000.0, 0.0, False),
                 ('Cobro parcial cliente', '110201', 0.0, 8000.0, partners['CLI-MAY']),
             ]),
@@ -1104,13 +1153,18 @@ class EsiDemoCalzadoLoader(models.AbstractModel):
         uoms = self._get_uoms(env)
         categories = self._get_or_create_categories(env)
         products = self._get_or_create_products(env, company, uoms, categories)
-        self._set_target_stock(env, warehouse, products)
+
+        # En AVCO el inventario de MP nace de compras reales. Primero creamos
+        # proveedores, confirmamos dos OC y validamos sus recepciones.
+        partners = self._get_or_create_partners(env, company)
+        pricelist = self._get_or_create_pricelist(env, company)
+        purchases, received_pickings = self._create_purchases(env, company, warehouse, partners, products)
 
         operators = self._get_or_create_operators(env, company)
         workcenters = self._get_or_create_workcenters(env, company)
 
-        routing_lona = self._get_or_create_routing(env, company, 'Ruta Bota de Lona - ESI DEMO', 'ESI-LONA')
-        routing_ind = self._get_or_create_routing(env, company, 'Ruta Bota Industrial - ESI DEMO', 'ESI-IND')
+        routing_lona = self._get_or_create_routing(env, company, 'Ruta Bota de Lona - ESI DEMO AVCO', 'AVCO-LONA')
+        routing_ind = self._get_or_create_routing(env, company, 'Ruta Bota Industrial - ESI DEMO AVCO', 'AVCO-IND')
         lona_ops = self._load_lona_operations(env, routing_lona, workcenters, operators)
         industrial_ops = self._load_industrial_operations(env, routing_ind, workcenters, operators)
         piecework_notes = self._create_piecework_notes(env, company)
@@ -1119,20 +1173,22 @@ class EsiDemoCalzadoLoader(models.AbstractModel):
         bom_ind = self._get_or_create_bom(env, company, products['PT-BOTA-IND'], routing_ind, BOM_INDUSTRIAL, products, warehouse)
 
         mos = env['mrp.production'].sudo().browse()
-        mos |= self._get_or_create_mo(env, company, warehouse, products['PT-BOTA-LONA'], bom_lona, lona_ops, 'ESI-DEMO-MRP-001-LOTE-50', 50.0, 'completed', -3)
-        mos |= self._get_or_create_mo(env, company, warehouse, products['PT-BOTA-LONA'], bom_lona, lona_ops, 'ESI-DEMO-MRP-002-EN-PROCESO', 20.0, 'progress', -1)
-        mos |= self._get_or_create_mo(env, company, warehouse, products['PT-BOTA-LONA'], bom_lona, lona_ops, 'ESI-DEMO-MRP-003-PLANIFICADA', 30.0, 'planned', 2)
-        mos |= self._get_or_create_mo(env, company, warehouse, products['PT-BOTA-IND'], bom_ind, industrial_ops, 'ESI-DEMO-MRP-004-INDUSTRIAL', 20.0, 'planned', 4)
+        mos |= self._get_or_create_mo(env, company, warehouse, products['PT-BOTA-LONA'], bom_lona, lona_ops, 'ESI-AVCO-MRP-001-LOTE-50', 50.0, 'completed', -3)
+        mos |= self._get_or_create_mo(env, company, warehouse, products['PT-BOTA-LONA'], bom_lona, lona_ops, 'ESI-AVCO-MRP-002-EN-PROCESO', 20.0, 'progress', -1)
+        mos |= self._get_or_create_mo(env, company, warehouse, products['PT-BOTA-LONA'], bom_lona, lona_ops, 'ESI-AVCO-MRP-003-PLANIFICADA', 30.0, 'planned', 2)
+        mos |= self._get_or_create_mo(env, company, warehouse, products['PT-BOTA-IND'], bom_ind, industrial_ops, 'ESI-AVCO-MRP-004-INDUSTRIAL', 20.0, 'planned', 4)
 
-        partners = self._get_or_create_partners(env, company)
-        pricelist = self._get_or_create_pricelist(env, company)
-        purchases = self._create_purchases(env, company, warehouse, partners, products)
         sales = self._create_sales(env, company, warehouse, partners, products, pricelist)
 
         accounts = self._create_chart(env, company)
         self._configure_demo_category_accounts(categories, accounts)
         journals = self._create_journals(env, company, accounts)
         account_moves = self._create_account_moves(env, company, accounts, journals, partners)
+
+        samples = []
+        for code in ('MP-CUERO', 'MP-LONA', 'MP-SUELA'):
+            product = products[code].with_context(force_company=company.id)
+            samples.append('%s = Bs %.4f' % (product.default_code, product.standard_price))
 
         return {
             'company_id': company.id,
@@ -1146,6 +1202,9 @@ class EsiDemoCalzadoLoader(models.AbstractModel):
             'products': len(products),
             'manufacturing_orders': len(mos),
             'purchase_orders': len(purchases),
+            'received_pickings': received_pickings,
             'sale_orders': len(sales),
             'account_moves': len(account_moves),
+            'cost_method': categories[0].with_context(force_company=company.id).property_cost_method,
+            'avco_samples': samples,
         }

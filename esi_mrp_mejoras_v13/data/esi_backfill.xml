@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <!-- Repara partes de tiempo creados con versiones anteriores del módulo. -->
+        <function model="mrp.workcenter.productivity" name="esi_backfill_from_workorders"/>
+    </data>
+</odoo>
