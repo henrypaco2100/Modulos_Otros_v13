@@ -1,0 +1,25 @@
+# -*- coding: utf-8 -*-
+{
+    'name': 'ESI Demo Insumos - Compras, Inventario, Ventas y Contabilidad',
+    'version': '13.0.1.0.0',
+    'category': 'Tools',
+    'summary': 'Demo integral Odoo 13 basada en el Excel de insumos de limpieza, embalaje y seguridad',
+    'author': 'ESI - Especialistas en Sistemas Integrados',
+    'website': 'https://esibolivia.store',
+    'license': 'LGPL-3',
+    'depends': [
+        'base',
+        'product',
+        'stock',
+        'purchase',
+        'purchase_stock',
+        'sale_management',
+        'sale_stock',
+        'account',
+    ],
+    'data': [],
+    'post_init_hook': 'post_init_hook',
+    'installable': True,
+    'application': True,
+    'auto_install': False,
+}
