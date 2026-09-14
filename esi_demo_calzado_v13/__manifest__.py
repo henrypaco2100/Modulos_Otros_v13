@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'ESI - Demo Calzado Odoo 13',
-    'version': '13.0.1.1.0',
+    'version': '13.0.1.1.1',
     'summary': 'Demo integral para fábrica de calzado: MRP, destajo, compras, ventas, inventario y contabilidad',
     'author': 'ESI - Especialistas en Sistemas Integrados',
     'category': 'Manufacturing',

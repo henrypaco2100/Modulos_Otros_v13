@@ -31,3 +31,11 @@ La carga es idempotente: busca registros por códigos/referencias y por hoja/fil
 
 ## Importante sobre contabilidad
 El plan contable incluido es demostrativo y útil para capacitación/venta de la solución. **No sustituye una localización contable/fiscal boliviana ni debe usarse como configuración legal de una empresa en producción sin revisión contable.**
+
+
+## Corrección 13.0.1.1.1
+- Corrige instalación en Odoo 13 cuando `mrp.workorder.product_uom_id` quedaba NULL.
+- Las órdenes de trabajo usan primero `mrp.production.button_plan()` y, como fallback, `_prepare_workorder_vals()` estándar de Odoo 13.
+- Se informan explícitamente `product_uom_id`, `qty_producing` y `consumption`.
+- Confirmación, reserva, planificación y cierre usan savepoints para no dejar la transacción abortada ante personalizaciones de terceros.
+- La creación de partes ESI DEMO es idempotente y no duplica líneas al recargar la demo.

@@ -516,55 +516,133 @@ class EsiDemoCalzadoLoader(models.AbstractModel):
 
     @api.model
     def _create_workorders(self, env, mo, operations, scenario='planned'):
+        """Crear/completar las órdenes de trabajo de la OF demo.
+
+        En Odoo 13 ``mrp.workorder`` hereda de ``mrp.abstract.workorder`` y
+        exige, entre otros, ``product_uom_id`` y ``consumption``.  La versión
+        inicial del demo construía las órdenes manualmente y omitía esos
+        campos.  Esta versión intenta primero el flujo estándar ``button_plan``
+        y, si la planificación de calendario no puede ejecutarse, usa
+        ``_prepare_workorder_vals`` de Odoo como fallback compatible.
+        """
         Workorder = env['mrp.workorder'].sudo()
         Productivity = env['mrp.workcenter.productivity'].sudo()
-        if mo.workorder_ids:
-            return mo.workorder_ids
         qty = mo.product_qty
-        workorders = Workorder.browse()
-        for idx, op in enumerate(operations, 1):
-            duration_expected = (op.esi_standard_seconds or 0.0) * qty / 60.0
-            state = 'pending'
-            if idx == 1:
-                state = 'ready'
-            wo = Workorder.create({
-                'name': op.name,
-                'production_id': mo.id,
-                'workcenter_id': op.workcenter_id.id,
-                'operation_id': op.id,
-                'company_id': mo.company_id.id,
-                'duration_expected': duration_expected,
-                'state': state,
+
+        # 1) Preferir siempre la generación estándar de Odoo 13.
+        workorders = mo.workorder_ids
+        if not workorders and mo.routing_id and mo.state == 'confirmed':
+            try:
+                with env.cr.savepoint():
+                    mo.button_plan()
+            except Exception:
+                # Un calendario incompleto o una personalización de planificación
+                # no debe impedir instalar la demo. El fallback de abajo conserva
+                # todos los campos obligatorios de mrp.workorder.
+                pass
+            workorders = mo.workorder_ids
+
+        # 2) Fallback seguro: usar el preparador nativo de Odoo 13.
+        if not workorders:
+            workorders = Workorder.browse()
+            for op in operations:
+                duration_expected = (op.esi_standard_seconds or 0.0) * qty / 60.0
+
+                if hasattr(mo, '_prepare_workorder_vals'):
+                    vals = mo._prepare_workorder_vals(op, workorders, qty)
+                else:
+                    # Respaldo defensivo para instalaciones 13 personalizadas.
+                    vals = {
+                        'name': op.name,
+                        'production_id': mo.id,
+                        'workcenter_id': op.workcenter_id.id,
+                        'operation_id': op.id,
+                        'product_uom_id': mo.product_uom_id.id or mo.product_id.uom_id.id,
+                        'qty_producing': qty,
+                        'consumption': mo.bom_id.consumption or 'flexible',
+                        'state': not workorders and 'ready' or 'pending',
+                    }
+
+                # Campos explícitos para bases con extensiones multi-compañía y
+                # para mantener los tiempos/destajos de la planilla ESI.
+                vals.update({
+                    'company_id': mo.company_id.id,
+                    'product_uom_id': vals.get('product_uom_id') or mo.product_uom_id.id or mo.product_id.uom_id.id,
+                    'consumption': vals.get('consumption') or mo.bom_id.consumption or 'flexible',
+                    'qty_producing': vals.get('qty_producing') or qty,
+                    'duration_expected': duration_expected,
+                    'esi_operator_id': op.esi_operator_id.id,
+                    'esi_area': op.esi_area,
+                    'esi_standard_seconds': op.esi_standard_seconds,
+                    'esi_piece_rate': op.esi_piece_rate,
+                })
+                wo = Workorder.create(vals)
+                if workorders:
+                    previous = workorders[-1]
+                    previous.write({'next_work_order_id': wo.id})
+                    try:
+                        previous._start_nextworkorder()
+                    except Exception:
+                        pass
+                workorders |= wo
+
+        # Orden lógico según la secuencia de la operación, no según el ID.
+        workorders = mo.workorder_ids.sorted(
+            key=lambda wo: ((wo.operation_id.sequence if wo.operation_id else 999999), wo.id)
+        ) or workorders
+
+        # Si fueron creadas por el planificador estándar, los campos ESI son
+        # computed/store desde operation_id. Solo completamos de forma defensiva
+        # órdenes no finalizadas que provengan de personalizaciones antiguas.
+        for wo in workorders.filtered(lambda w: w.state not in ('done', 'cancel')):
+            op = wo.operation_id
+            if not op:
+                continue
+            vals = {}
+            if not wo.product_uom_id:
+                vals['product_uom_id'] = mo.product_uom_id.id or mo.product_id.uom_id.id
+            if not wo.consumption:
+                vals['consumption'] = mo.bom_id.consumption or 'flexible'
+            if not wo.qty_producing:
+                vals['qty_producing'] = qty
+            # Mantener los datos de la hoja incluso si otro módulo cambió el compute.
+            vals.update({
                 'esi_operator_id': op.esi_operator_id.id,
                 'esi_area': op.esi_area,
                 'esi_standard_seconds': op.esi_standard_seconds,
                 'esi_piece_rate': op.esi_piece_rate,
             })
-            workorders |= wo
-        for pos, wo in enumerate(workorders[:-1]):
-            wo.write({'next_work_order_id': workorders[pos + 1].id})
+            if vals:
+                wo.write(vals)
 
         if scenario not in ('completed', 'progress'):
             return workorders
 
+        # 3) Partes de producción DEMO. Idempotentes por workorder + esi_source.
         loss = self._productive_loss(env)
-        cursor = datetime.combine(fields.Date.context_today(self), time(7, 30)) - timedelta(days=3 if scenario == 'completed' else 1)
+        cursor = datetime.combine(fields.Date.context_today(self), time(7, 30)) - timedelta(
+            days=3 if scenario == 'completed' else 1
+        )
         progress_limit = 13 if scenario == 'progress' else len(workorders)
+
         for idx, wo in enumerate(workorders, 1):
             if idx > progress_limit:
                 continue
             op = wo.operation_id
+            if not op:
+                continue
+
             full_qty = qty
             part_qty = full_qty if scenario == 'completed' or idx < progress_limit else max(1.0, full_qty / 2.0)
             minutes = (op.esi_standard_seconds or 0.0) * part_qty / 60.0
             date_start = cursor
             date_end = cursor + timedelta(minutes=minutes)
-            Productivity.create({
+            prod_vals = {
                 'workorder_id': wo.id,
                 'workcenter_id': wo.workcenter_id.id,
                 'company_id': mo.company_id.id,
                 'loss_id': loss.id,
-                'user_id': self.env.user.id,
+                'user_id': env.user.id,
                 'date_start': date_start,
                 'date_end': date_end,
                 'description': 'Parte de producción ESI DEMO - %s' % (op.name or ''),
@@ -573,18 +651,31 @@ class EsiDemoCalzadoLoader(models.AbstractModel):
                 'esi_qty_processed': part_qty,
                 'esi_piece_rate': op.esi_piece_rate,
                 'esi_source': 'demo',
-            })
-            state = 'done'
-            if scenario == 'progress' and idx == progress_limit:
-                state = 'progress'
-            vals = {
-                'qty_produced': part_qty,
-                'state': state,
-                'date_start': date_start,
             }
-            if state == 'done':
-                vals['date_finished'] = date_end
-            wo.write(vals)
+            timeline = Productivity.search([
+                ('workorder_id', '=', wo.id),
+                ('esi_source', '=', 'demo'),
+            ], limit=1)
+            if timeline:
+                timeline.write(prod_vals)
+            else:
+                Productivity.create(prod_vals)
+
+            target_state = 'done'
+            if scenario == 'progress' and idx == progress_limit:
+                target_state = 'progress'
+
+            # No reescribir órdenes ya terminadas: Odoo 13 bloquea cambios
+            # distintos de time_ids en workorders con state='done'.
+            if wo.state not in ('done', 'cancel'):
+                wo_vals = {
+                    'qty_produced': part_qty,
+                    'state': target_state,
+                    'date_start': date_start,
+                }
+                if target_state == 'done':
+                    wo_vals['date_finished'] = date_end
+                wo.write(wo_vals)
             cursor = date_end
         return workorders
 
@@ -592,48 +683,63 @@ class EsiDemoCalzadoLoader(models.AbstractModel):
     def _get_or_create_mo(self, env, company, warehouse, product, bom, operations, origin, qty, scenario, offset_days):
         Production = env['mrp.production'].sudo()
         mo = Production.search([('origin', '=', origin), ('company_id', '=', company.id)], limit=1)
-        if mo:
-            return mo
-        picking_type = env['stock.picking.type'].sudo().search([
-            ('code', '=', 'mrp_operation'), ('warehouse_id', '=', warehouse.id), ('company_id', '=', company.id)
-        ], limit=1)
-        if not picking_type:
+
+        if not mo:
             picking_type = env['stock.picking.type'].sudo().search([
-                ('code', '=', 'mrp_operation'), ('company_id', '=', company.id)
+                ('code', '=', 'mrp_operation'), ('warehouse_id', '=', warehouse.id), ('company_id', '=', company.id)
             ], limit=1)
-        planned = fields.Datetime.now() + timedelta(days=offset_days)
-        vals = {
-            'origin': origin,
-            'product_id': product.id,
-            'product_qty': qty,
-            'product_uom_id': product.uom_id.id,
-            'bom_id': bom.id,
-            'company_id': company.id,
-            'date_planned_start': planned,
-            'location_src_id': warehouse.lot_stock_id.id,
-            'location_dest_id': warehouse.lot_stock_id.id,
-        }
-        if picking_type:
-            vals['picking_type_id'] = picking_type.id
-        mo = Production.with_context(import_file=True).create(vals)
-        try:
-            mo.action_confirm()
-        except Exception:
-            # Si una personalización impide confirmar, la OF demo y sus operaciones
-            # aún quedan disponibles para mostrar el proceso.
-            pass
+            if not picking_type:
+                picking_type = env['stock.picking.type'].sudo().search([
+                    ('code', '=', 'mrp_operation'), ('company_id', '=', company.id)
+                ], limit=1)
+            planned = fields.Datetime.now() + timedelta(days=offset_days)
+            vals = {
+                'origin': origin,
+                'product_id': product.id,
+                'product_qty': qty,
+                'product_uom_id': product.uom_id.id,
+                'bom_id': bom.id,
+                'company_id': company.id,
+                'date_planned_start': planned,
+                'date_start_wo': planned,
+                'location_src_id': warehouse.lot_stock_id.id,
+                'location_dest_id': warehouse.lot_stock_id.id,
+            }
+            if picking_type:
+                vals['picking_type_id'] = picking_type.id
+            mo = Production.with_context(import_file=True).create(vals)
+
+        # Confirmar dentro de savepoint evita dejar la transacción PostgreSQL
+        # abortada si una personalización impide la confirmación.
+        if mo.state == 'draft':
+            try:
+                with env.cr.savepoint():
+                    mo.action_confirm()
+            except Exception:
+                pass
+
+        # Reservar materiales si es posible, sin hacer obligatoria la existencia
+        # física de todo el stock para poder instalar una base de demostración.
+        if mo.state not in ('draft', 'done', 'cancel'):
+            try:
+                with env.cr.savepoint():
+                    mo.action_assign()
+            except Exception:
+                pass
+
         self._create_workorders(env, mo, operations, scenario=scenario)
 
-        if scenario == 'completed':
-            # Dejar cantidades reales en movimientos. Si la base permite cerrar de
-            # forma estándar, se intenta; si otra personalización lo impide queda
-            # como OF producida / por cerrar, sin abortar toda la demo.
+        if scenario == 'completed' and mo.state not in ('done', 'cancel'):
+            # Toda la simulación de cierre va dentro del savepoint. Si otra
+            # personalización la rechaza, queda una OF demostrativa utilizable
+            # sin contaminar la transacción de instalación.
             try:
-                for move in mo.move_raw_ids.filtered(lambda m: m.state not in ('done', 'cancel')):
-                    move.quantity_done = move.product_uom_qty
-                for move in mo.move_finished_ids.filtered(lambda m: m.product_id == product and m.state not in ('done', 'cancel')):
-                    move.quantity_done = qty
-                with self.env.cr.savepoint():
+                with env.cr.savepoint():
+                    for move in mo.move_raw_ids.filtered(lambda m: m.state not in ('done', 'cancel')):
+                        move.quantity_done = move.product_uom_qty
+                    for move in mo.move_finished_ids.filtered(
+                            lambda m: m.product_id == product and m.state not in ('done', 'cancel')):
+                        move.quantity_done = qty
                     mo.button_mark_done()
             except Exception:
                 pass
@@ -753,7 +859,8 @@ class EsiDemoCalzadoLoader(models.AbstractModel):
                 po = Purchase.create(vals)
                 if confirm:
                     try:
-                        po.button_confirm()
+                        with env.cr.savepoint():
+                            po.button_confirm()
                     except Exception:
                         pass
             orders |= po
@@ -787,7 +894,8 @@ class EsiDemoCalzadoLoader(models.AbstractModel):
                 })
                 if confirm:
                     try:
-                        so.action_confirm()
+                        with env.cr.savepoint():
+                            so.action_confirm()
                     except Exception:
                         pass
             orders |= so
@@ -965,7 +1073,8 @@ class EsiDemoCalzadoLoader(models.AbstractModel):
                     move_vals['type'] = 'entry'
                 move = Move.create(move_vals)
                 try:
-                    move.action_post()
+                    with env.cr.savepoint():
+                        move.action_post()
                 except Exception:
                     pass
             moves |= move
