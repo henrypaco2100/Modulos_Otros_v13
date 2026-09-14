@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # ESI - utilidades de análisis por Orden de Producción.
 
-from odoo import fields, models, _
+from odoo import fields, models
 
 
 class MrpProduction(models.Model):
@@ -106,6 +106,61 @@ class MrpProduction(models.Model):
         rows.sort(key=lambda r: (r['product'] or '').lower())
         return rows
 
+
+    def _esi_report_operation_rows(self):
+        """Detalle de operaciones compatible con instalaciones con/sin esi_mrp_mejoras_v13."""
+        self.ensure_one()
+        rows = []
+        for wo in self.workorder_ids.sorted(key=lambda w: ((w.operation_id.sequence if w.operation_id else 999999), w.id)):
+            operation = wo.operation_id
+            time_lines = wo.time_ids
+            custom_time = bool(time_lines and 'esi_piece_amount' in time_lines._fields)
+            registered_piecework = sum(time_lines.mapped('esi_piece_amount')) if custom_time else 0.0
+            registered_qty = sum(time_lines.mapped('esi_qty_processed')) if custom_time and 'esi_qty_processed' in time_lines._fields else 0.0
+            standard_seconds = operation.esi_standard_seconds if operation and 'esi_standard_seconds' in operation._fields else 0.0
+            piece_rate = operation.esi_piece_rate if operation and 'esi_piece_rate' in operation._fields else 0.0
+            labor_cost_pair = operation.esi_labor_cost_pair if operation and 'esi_labor_cost_pair' in operation._fields else 0.0
+            operator = ''
+            area = ''
+            measurement = ''
+            source_sheet = ''
+            source_row = 0
+            if operation:
+                if 'esi_operator_id' in operation._fields and operation.esi_operator_id:
+                    operator = operation.esi_operator_id.display_name or ''
+                if 'esi_area' in operation._fields:
+                    area = operation.esi_area or ''
+                if 'esi_measurement_status' in operation._fields:
+                    selection = dict(operation._fields['esi_measurement_status'].selection)
+                    measurement = selection.get(operation.esi_measurement_status, operation.esi_measurement_status or '')
+                if 'esi_source_sheet' in operation._fields:
+                    source_sheet = operation.esi_source_sheet or ''
+                if 'esi_source_row' in operation._fields:
+                    source_row = operation.esi_source_row or 0
+            planned_qty = wo.qty_production or self.product_qty or 0.0
+            rows.append({
+                'name': wo.name or (operation.name if operation else ''),
+                'workcenter': wo.workcenter_id.display_name or '',
+                'area': area,
+                'operator': operator,
+                'measurement_status': measurement,
+                'source_sheet': source_sheet,
+                'source_row': source_row,
+                'standard_seconds_pair': standard_seconds,
+                'standard_minutes_pair': standard_seconds / 60.0 if standard_seconds else 0.0,
+                'standard_minutes_total': (standard_seconds * planned_qty / 60.0) if standard_seconds else 0.0,
+                'actual_minutes': wo.duration or 0.0,
+                'piece_rate': piece_rate,
+                'planned_piecework': piece_rate * planned_qty,
+                'registered_piecework': registered_piecework,
+                'registered_qty': registered_qty,
+                'labor_cost_pair': labor_cost_pair,
+                'planned_labor_cost': labor_cost_pair * planned_qty,
+                'workcenter_cost_hour': wo.workcenter_id.costs_hour or 0.0,
+                'actual_workcenter_cost': ((wo.duration or 0.0) / 60.0) * (wo.workcenter_id.costs_hour or 0.0),
+            })
+        return rows
+
     def _esi_report_detail_data(self, include_costs=False):
         self.ensure_one()
         can_costs = bool(include_costs and self._esi_report_can_view_costs())
@@ -114,7 +169,13 @@ class MrpProduction(models.Model):
         material_rows = self._esi_report_material_rows(include_costs=can_costs)
         material_planned_cost = sum(r['planned_cost'] for r in material_rows) if can_costs else 0.0
         material_actual_cost = sum(r['actual_cost'] for r in material_rows) if can_costs else 0.0
+        operation_rows = self._esi_report_operation_rows()
         operation_cost = self._esi_report_workorder_cost() if can_costs else 0.0
+        piecework_planned_total = sum(r['planned_piecework'] for r in operation_rows)
+        piecework_registered_total = sum(r['registered_piecework'] for r in operation_rows)
+        standard_operation_minutes = sum(r['standard_minutes_total'] for r in operation_rows)
+        actual_operation_minutes = sum(r['actual_minutes'] for r in operation_rows)
+        standard_labor_cost = sum(r['planned_labor_cost'] for r in operation_rows)
         total_cost = material_actual_cost + operation_cost
         sale_price = self.product_id.lst_price if can_costs else 0.0
         potential_revenue = produced_qty * sale_price if can_costs else 0.0
@@ -150,6 +211,13 @@ class MrpProduction(models.Model):
             'material_planned_cost': material_planned_cost,
             'material_actual_cost': material_actual_cost,
             'material_cost_variance': material_actual_cost - material_planned_cost,
+            'operation_rows': operation_rows,
+            'has_esi_operations': any(r['area'] or r['operator'] or r['piece_rate'] or r['standard_seconds_pair'] for r in operation_rows),
+            'piecework_planned_total': piecework_planned_total,
+            'piecework_registered_total': piecework_registered_total,
+            'standard_operation_minutes': standard_operation_minutes,
+            'actual_operation_minutes': actual_operation_minutes,
+            'standard_labor_cost': standard_labor_cost,
             'operation_cost': operation_cost,
             'total_cost': total_cost,
             'unit_cost': (total_cost / produced_qty) if produced_qty else 0.0,
@@ -157,22 +225,4 @@ class MrpProduction(models.Model):
             'potential_revenue': potential_revenue,
             'potential_margin': potential_margin,
             'margin_pct': margin_pct,
-        }
-
-
-    # ESI mejora: smart button para VER el análisis individual antes de descargarlo.
-    def action_open_esi_production_analysis(self):
-        self.ensure_one()
-        wizard = self.env['esi.production.detail.wizard'].create({
-            'production_id': self.id,
-        })
-        wizard.preview_html = wizard._build_preview_html()
-        return {
-            'type': 'ir.actions.act_window',
-            'name': _('Análisis de Producción - %s') % (self.name or ''),
-            'res_model': 'esi.production.detail.wizard',
-            'res_id': wizard.id,
-            'view_mode': 'form',
-            'view_id': self.env.ref('esi_produccion_report_v13.view_esi_production_detail_wizard_form').id,
-            'target': 'current',
         }

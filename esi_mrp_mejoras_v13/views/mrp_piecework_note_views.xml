@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_esi_mrp_piecework_note_tree" model="ir.ui.view">
+        <field name="name">esi.mrp.piecework.note.tree</field>
+        <field name="model">esi.mrp.piecework.note</field>
+        <field name="arch" type="xml">
+            <tree string="Apuntes de Destajo ESI" editable="bottom">
+                <field name="date"/>
+                <field name="name"/>
+                <field name="area"/>
+                <field name="operator_id"/>
+                <field name="production_id"/>
+                <field name="quantity" sum="Cantidad"/>
+                <field name="rate"/>
+                <field name="amount" sum="Total Destajo" readonly="1"/>
+                <field name="source_sheet" optional="hide"/>
+                <field name="source_row" optional="hide"/>
+                <field name="company_id" groups="base.group_multi_company"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="view_esi_mrp_piecework_note_form" model="ir.ui.view">
+        <field name="name">esi.mrp.piecework.note.form</field>
+        <field name="model">esi.mrp.piecework.note</field>
+        <field name="arch" type="xml">
+            <form string="Apunte de Destajo ESI">
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="date"/>
+                            <field name="name"/>
+                            <field name="area"/>
+                            <field name="operator_id"/>
+                            <field name="production_id"/>
+                        </group>
+                        <group>
+                            <field name="quantity"/>
+                            <field name="rate"/>
+                            <field name="amount" readonly="1"/>
+                            <field name="company_id" groups="base.group_multi_company"/>
+                        </group>
+                    </group>
+                    <group string="Trazabilidad de la planilla">
+                        <field name="source_sheet"/>
+                        <field name="source_row"/>
+                        <field name="source_note"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_esi_mrp_piecework_note_search" model="ir.ui.view">
+        <field name="name">esi.mrp.piecework.note.search</field>
+        <field name="model">esi.mrp.piecework.note</field>
+        <field name="arch" type="xml">
+            <search string="Apuntes de Destajo ESI">
+                <field name="name"/>
+                <field name="operator_id"/>
+                <field name="area"/>
+                <field name="production_id"/>
+                <filter string="Con OF" name="with_mo" domain="[('production_id','!=',False)]"/>
+                <filter string="Sin OF" name="without_mo" domain="[('production_id','=',False)]"/>
+                <group expand="0" string="Agrupar por">
+                    <filter string="Área" name="group_area" context="{'group_by':'area'}"/>
+                    <filter string="Operador" name="group_operator" context="{'group_by':'operator_id'}"/>
+                    <filter string="Mes" name="group_month" context="{'group_by':'date:month'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_esi_mrp_piecework_note" model="ir.actions.act_window">
+        <field name="name">Apuntes de Destajo ESI</field>
+        <field name="res_model">esi.mrp.piecework.note</field>
+        <field name="view_mode">tree,form,pivot,graph</field>
+        <field name="context">{'search_default_group_area': 0}</field>
+    </record>
+
+    <menuitem id="menu_esi_mrp_piecework_note"
+              name="Apuntes de Destajo ESI"
+              parent="mrp.menu_mrp_reporting"
+              action="action_esi_mrp_piecework_note"
+              sequence="25"
+              groups="mrp.group_mrp_user"/>
+</odoo>

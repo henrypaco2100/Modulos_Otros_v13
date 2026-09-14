@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_mrp_workorder_form_esi" model="ir.ui.view">
+        <field name="name">mrp.workorder.form.esi</field>
+        <field name="model">mrp.workorder</field>
+        <field name="inherit_id" ref="mrp.mrp_production_workorder_form_view_inherit"/>
+        <field name="arch" type="xml">
+            <xpath expr="//page[@string='Time Tracking']/group[1]" position="before">
+                <group string="ESI - Tiempo y Destajo">
+                    <group>
+                        <field name="esi_area"/>
+                        <field name="esi_operator_id"/>
+                        <field name="esi_standard_seconds"/>
+                    </group>
+                    <group>
+                        <field name="esi_piece_rate"/>
+                        <field name="esi_piece_qty"/>
+                        <field name="esi_piece_amount" readonly="1"/>
+                    </group>
+                </group>
+            </xpath>
+            <xpath expr="//field[@name='time_ids']/tree/field[@name='user_id']" position="after">
+                <field name="esi_operator_id" optional="show"/>
+                <field name="esi_qty_processed" optional="show"/>
+                <field name="esi_piece_rate" optional="show"/>
+                <field name="esi_piece_amount" optional="show"/>
+            </xpath>
+            <xpath expr="//field[@name='time_ids']/form//field[@name='user_id']" position="after">
+                <field name="esi_operator_id"/>
+                <field name="esi_area"/>
+                <field name="esi_qty_processed"/>
+                <field name="esi_piece_rate"/>
+                <field name="esi_piece_amount" readonly="1"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>

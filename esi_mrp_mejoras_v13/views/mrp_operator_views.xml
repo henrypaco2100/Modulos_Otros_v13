@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_esi_mrp_operator_tree" model="ir.ui.view">
+        <field name="name">esi.mrp.operator.tree</field>
+        <field name="model">esi.mrp.operator</field>
+        <field name="arch" type="xml">
+            <tree string="Operadores de Producción">
+                <field name="name"/>
+                <field name="code"/>
+                <field name="user_id"/>
+                <field name="company_id" groups="base.group_multi_company"/>
+                <field name="active"/>
+            </tree>
+        </field>
+    </record>
+    <record id="view_esi_mrp_operator_form" model="ir.ui.view">
+        <field name="name">esi.mrp.operator.form</field>
+        <field name="model">esi.mrp.operator</field>
+        <field name="arch" type="xml">
+            <form string="Operador de Producción">
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="name"/>
+                            <field name="code"/>
+                            <field name="active"/>
+                        </group>
+                        <group>
+                            <field name="company_id" groups="base.group_multi_company"/>
+                            <field name="user_id"/>
+                        </group>
+                    </group>
+                    <field name="notes" placeholder="Observaciones..."/>
+                </sheet>
+            </form>
+        </field>
+    </record>
+    <record id="action_esi_mrp_operator" model="ir.actions.act_window">
+        <field name="name">Operadores ESI</field>
+        <field name="res_model">esi.mrp.operator</field>
+        <field name="view_mode">tree,form</field>
+    </record>
+    <menuitem id="menu_esi_mrp_operator" name="Operadores ESI" parent="mrp.menu_mrp_configuration" action="action_esi_mrp_operator" sequence="45" groups="mrp.group_mrp_manager"/>
+</odoo>

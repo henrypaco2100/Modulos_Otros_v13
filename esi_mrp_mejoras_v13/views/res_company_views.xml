@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_company_form_esi_mrp" model="ir.ui.view">
+        <field name="name">res.company.form.esi.mrp</field>
+        <field name="model">res.company</field>
+        <field name="inherit_id" ref="base.view_company_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//notebook" position="inside">
+                <page string="ESI Producción">
+                    <group string="Base de cálculo laboral">
+                        <group>
+                            <field name="esi_avg_monthly_labor_cost"/>
+                            <field name="esi_workdays_month"/>
+                            <field name="esi_hours_day"/>
+                            <field name="esi_reference_pairs_day"/>
+                        </group>
+                        <group>
+                            <field name="esi_cost_day" readonly="1"/>
+                            <field name="esi_cost_hour" readonly="1"/>
+                            <field name="esi_cost_minute" readonly="1"/>
+                        </group>
+                    </group>
+                    <div class="alert alert-info" role="alert">
+                        Los valores iniciales 3.300 Bs/mes, 26 días, 8 horas/día y la referencia de 5 pares/día/persona provienen de la planilla de tiempos entregada. Son parámetros editables de análisis, no reglas que bloqueen la producción.
+                    </div>
+                </page>
+            </xpath>
+        </field>
+    </record>
+</odoo>

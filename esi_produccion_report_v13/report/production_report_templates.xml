@@ -117,12 +117,52 @@
                     </table>
                     <div style="margin:4px 0;font-size:8px;"><strong>Sobreconsumo:</strong> <span t-esc="d['over_material_count']"/> materiales | <strong>Bajo consumo:</strong> <span t-esc="d['under_material_count']"/> materiales</div>
 
-                    <t t-if="o.workorder_ids">
-                        <h4 style="margin:8px 0 4px;">Operaciones / Centros de Trabajo</h4>
-                        <table style="border-collapse:collapse;width:100%;font-size:8px;">
-                            <thead><tr style="background:#e7edf3;"><th style="border:1px solid #89949e;padding:3px;">OPERACIÓN</th><th style="border:1px solid #89949e;padding:3px;">CENTRO DE TRABAJO</th><th style="border:1px solid #89949e;padding:3px;">DURACIÓN (MIN)</th><th t-if="d['can_costs']" style="border:1px solid #89949e;padding:3px;">COSTO/HORA</th></tr></thead>
-                            <tbody><tr t-foreach="o.workorder_ids" t-as="wo"><td style="border:1px solid #aab2b9;padding:3px;"><span t-esc="wo.name"/></td><td style="border:1px solid #aab2b9;padding:3px;"><span t-esc="wo.workcenter_id.display_name"/></td><td style="border:1px solid #aab2b9;padding:3px;text-align:right;"><span t-esc="o._esi_report_fmt(wo.duration, 2)"/></td><td t-if="d['can_costs']" style="border:1px solid #aab2b9;padding:3px;text-align:right;"><span t-esc="o._esi_report_fmt_money(wo.workcenter_id.costs_hour)"/></td></tr></tbody>
+                    <t t-if="d['operation_rows']">
+                        <h4 style="margin:8px 0 4px;">Operaciones / Centros de Trabajo / Partes de Producción</h4>
+                        <table style="border-collapse:collapse;width:100%;font-size:7px;">
+                            <thead>
+                                <tr style="background:#e7edf3;">
+                                    <th style="border:1px solid #89949e;padding:2px;">OPERACIÓN</th>
+                                    <th style="border:1px solid #89949e;padding:2px;">ÁREA</th>
+                                    <th style="border:1px solid #89949e;padding:2px;">OPERADOR</th>
+                                    <th style="border:1px solid #89949e;padding:2px;">CENTRO</th>
+                                    <th style="border:1px solid #89949e;padding:2px;">EST. SEG/PAR</th>
+                                    <th style="border:1px solid #89949e;padding:2px;">EST. MIN LOTE</th>
+                                    <th style="border:1px solid #89949e;padding:2px;">REAL MIN</th>
+                                    <th style="border:1px solid #89949e;padding:2px;">DEST. Bs/PAR</th>
+                                    <th style="border:1px solid #89949e;padding:2px;">DEST. PREV.</th>
+                                    <th style="border:1px solid #89949e;padding:2px;">DEST. REG.</th>
+                                    <th style="border:1px solid #89949e;padding:2px;">MEDICIÓN</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr t-foreach="d['operation_rows']" t-as="r">
+                                    <td style="border:1px solid #aab2b9;padding:2px;"><span t-esc="r['name']"/></td>
+                                    <td style="border:1px solid #aab2b9;padding:2px;"><span t-esc="r['area']"/></td>
+                                    <td style="border:1px solid #aab2b9;padding:2px;"><span t-esc="r['operator']"/></td>
+                                    <td style="border:1px solid #aab2b9;padding:2px;"><span t-esc="r['workcenter']"/></td>
+                                    <td style="border:1px solid #aab2b9;padding:2px;text-align:right;"><span t-esc="o._esi_report_fmt(r['standard_seconds_pair'], 2)"/></td>
+                                    <td style="border:1px solid #aab2b9;padding:2px;text-align:right;"><span t-esc="o._esi_report_fmt(r['standard_minutes_total'], 2)"/></td>
+                                    <td style="border:1px solid #aab2b9;padding:2px;text-align:right;"><span t-esc="o._esi_report_fmt(r['actual_minutes'], 2)"/></td>
+                                    <td style="border:1px solid #aab2b9;padding:2px;text-align:right;"><span t-esc="o._esi_report_fmt_money(r['piece_rate'])"/></td>
+                                    <td style="border:1px solid #aab2b9;padding:2px;text-align:right;"><span t-esc="o._esi_report_fmt_money(r['planned_piecework'])"/></td>
+                                    <td style="border:1px solid #aab2b9;padding:2px;text-align:right;"><span t-esc="o._esi_report_fmt_money(r['registered_piecework'])"/></td>
+                                    <td style="border:1px solid #aab2b9;padding:2px;text-align:center;"><span t-esc="r['measurement_status']"/></td>
+                                </tr>
+                                <tr style="font-weight:bold;background:#f7f8f9;">
+                                    <td colspan="5" style="border:1px solid #89949e;padding:3px;text-align:right;">TOTALES OPERACIONES</td>
+                                    <td style="border:1px solid #89949e;padding:3px;text-align:right;"><span t-esc="o._esi_report_fmt(d['standard_operation_minutes'], 2)"/></td>
+                                    <td style="border:1px solid #89949e;padding:3px;text-align:right;"><span t-esc="o._esi_report_fmt(d['actual_operation_minutes'], 2)"/></td>
+                                    <td style="border:1px solid #89949e;padding:3px;"></td>
+                                    <td style="border:1px solid #89949e;padding:3px;text-align:right;"><span t-esc="o._esi_report_fmt_money(d['piecework_planned_total'])"/></td>
+                                    <td style="border:1px solid #89949e;padding:3px;text-align:right;"><span t-esc="o._esi_report_fmt_money(d['piecework_registered_total'])"/></td>
+                                    <td style="border:1px solid #89949e;padding:3px;"></td>
+                                </tr>
+                            </tbody>
                         </table>
+                        <p t-if="d['has_esi_operations']" style="font-size:7px;color:#666;margin-top:3px;">
+                            En operaciones ESI, “destajo previsto” usa cantidad planificada × tarifa por par; “destajo registrado” suma los partes de producción realmente cargados.
+                        </p>
                     </t>
 
                     <t t-if="d['can_costs']">

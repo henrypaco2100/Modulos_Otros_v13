@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_mrp_routing_workcenter_form_esi" model="ir.ui.view">
+        <field name="name">mrp.routing.workcenter.form.esi</field>
+        <field name="model">mrp.routing.workcenter</field>
+        <field name="inherit_id" ref="mrp.mrp_routing_workcenter_form_view"/>
+        <field name="arch" type="xml">
+            <xpath expr="//notebook" position="inside">
+                <page string="ESI Tiempos y Destajo">
+                    <group>
+                        <group string="Operación">
+                            <field name="esi_area"/>
+                            <field name="esi_operator_id"/>
+                            <field name="esi_measurement_status"/>
+                            <field name="esi_source_sheet" readonly="1"/>
+                            <field name="esi_source_row" readonly="1"/>
+                            <field name="esi_source_note"/>
+                        </group>
+                        <group string="Tiempo estándar">
+                            <field name="esi_standard_seconds"/>
+                            <field name="esi_standard_minutes" readonly="1"/>
+                            <field name="esi_labor_cost_pair" readonly="1"/>
+                            <field name="esi_piece_rate"/>
+                        </group>
+                        <group string="Serie">
+                            <field name="esi_batch_qty"/>
+                            <field name="esi_batch_minutes" readonly="1"/>
+                            <field name="esi_batch_cost" readonly="1"/>
+                            <field name="esi_piecework_batch_amount" readonly="1"/>
+                        </group>
+                    </group>
+                </page>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_mrp_routing_workcenter_tree_esi" model="ir.ui.view">
+        <field name="name">mrp.routing.workcenter.tree.esi</field>
+        <field name="model">mrp.routing.workcenter</field>
+        <field name="inherit_id" ref="mrp.mrp_routing_workcenter_tree_view"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='workcenter_id']" position="after">
+                <field name="esi_area" optional="show"/>
+                <field name="esi_operator_id" optional="show"/>
+                <field name="esi_standard_seconds" optional="show"/>
+                <field name="esi_piece_rate" optional="show"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>

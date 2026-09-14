@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'ESI - Informes de Producción',
-    'version': '13.0.2.0.0',
-    'summary': 'Resumen, consumo LdM vs real, costos, margen y análisis visual por orden de producción',
+    'version': '13.0.1.1.0',
+    'summary': 'Resumen, consumo LdM vs real, costos y margen potencial de producción',
     'author': 'ESI - Especialistas en Sistemas Integrados',
     'category': 'Manufacturing/Reporting',
     'license': 'LGPL-3',

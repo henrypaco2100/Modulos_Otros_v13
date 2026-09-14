@@ -1,0 +1,5 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_esi_mrp_operator_user,esi.mrp.operator user,model_esi_mrp_operator,mrp.group_mrp_user,1,0,0,0
+access_esi_mrp_operator_manager,esi.mrp.operator manager,model_esi_mrp_operator,mrp.group_mrp_manager,1,1,1,1
+access_esi_mrp_piecework_note_user,esi.mrp.piecework.note user,model_esi_mrp_piecework_note,mrp.group_mrp_user,1,1,1,0
+access_esi_mrp_piecework_note_manager,esi.mrp.piecework.note manager,model_esi_mrp_piecework_note,mrp.group_mrp_manager,1,1,1,1
