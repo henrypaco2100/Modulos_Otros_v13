@@ -189,19 +189,29 @@ def _journal(env, company, code, name, jtype, debit_account, credit_account):
 
 
 def _payment_term(env, company, days):
-    xmlid = {0: 'account.account_payment_term_immediate', 15: 'account.account_payment_term_15days', 30: 'account.account_payment_term_30days'}[days]
-    term = env.ref(xmlid, raise_if_not_found=False)
-    if term and (not term.company_id or term.company_id == company):
-        return term
+    """Crea términos propios para que la demo no dependa de XML-ID opcionales."""
     name = 'DEMO - Contado' if days == 0 else 'DEMO - %s días' % days
-    term = env['account.payment.term'].sudo().search([('name', '=', name), '|', ('company_id', '=', False), ('company_id', '=', company.id)], limit=1)
+    term = env['account.payment.term'].sudo().search([
+        ('name', '=', name),
+        '|', ('company_id', '=', False), ('company_id', '=', company.id),
+    ], limit=1)
     if term:
         return term
-    term = env['account.payment.term'].sudo().create({
+
+    line_vals = {
+        'value': 'balance',
+        'value_amount': 0.0,
+        'sequence': 500,
+        'days': days,
+        'option': 'day_after_invoice_date',
+    }
+    vals = {
         'name': name,
-        'company_id': company.id,
-        'line_ids': [(5, 0, 0), (0, 0, {'value': 'balance', 'value_amount': 0.0, 'sequence': 500, 'days': days, 'option': 'day_after_invoice_date'})],
-    })
+        'line_ids': [(0, 0, line_vals)],
+    }
+    if 'company_id' in env['account.payment.term']._fields:
+        vals['company_id'] = company.id
+    term = env['account.payment.term'].sudo().create(vals)
     return _register_xmlid(env, 'payment_term_%s' % days, term)
 
 
@@ -459,7 +469,6 @@ def post_init_hook(cr, registry):
                 'payment_term_id': terms[sale_data['term_days']].id,
                 'date_order': DEMO_DATETIME,
                 'client_order_ref': sale_data['name'],
-                'reference': sale_data['name'],
                 'note': sale_data['note'],
                 'company_id': company.id,
                 'order_line': lines,

@@ -36,3 +36,8 @@
 - Tienda Online Oriente: **Bs 2.100**, vence 29/09/2026.
 - Constructora Nuevo Horizonte: **Bs 840**, vence 14/10/2026.
 - Limpieza Integral Brisa: **Bs 0**.
+
+## Corrección 13.0.1.0.1
+- Se exporta correctamente `post_init_hook` desde `__init__.py`, como exige el cargador de módulos de Odoo 13.
+- Se eliminó el uso del campo opcional `reference` en `sale.order` para mejorar compatibilidad entre builds de Odoo 13.
+- Los términos de pago DEMO se crean dentro del módulo, evitando depender de XML-ID opcionales de localizaciones/planes contables.
