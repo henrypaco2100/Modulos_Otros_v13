@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'ESI - Mejoras MRP Calzado',
-    'version': '13.0.1.1.0',
+    'version': '13.0.1.1.1',
     'summary': 'Tiempos estándar, operadores, destajo y partes de producción para fabricación de calzado',
     'author': 'ESI - Especialistas en Sistemas Integrados',
     'category': 'Manufacturing',

@@ -5,7 +5,7 @@
         <field name="model">mrp.workorder</field>
         <field name="inherit_id" ref="mrp.mrp_production_workorder_form_view_inherit"/>
         <field name="arch" type="xml">
-            <xpath expr="//page[@string='Time Tracking']/group[1]" position="before">
+            <xpath expr="//field[@name='time_ids']" position="before">
                 <group string="ESI - Tiempo y Destajo">
                     <group>
                         <field name="esi_area"/>

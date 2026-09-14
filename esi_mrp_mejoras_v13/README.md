@@ -26,3 +26,9 @@ Extender Fabricación de Odoo 13 para representar el control de tiempos y pago p
 - Referencia informativa: **5 pares/día/persona**.
 
 Estos parámetros son editables. No se usan como bloqueo de producción.
+
+## Corrección 13.0.1.1.1
+- Corregida la herencia de la vista de órdenes de trabajo para Odoo 13.
+- Se eliminó el XPath basado en `@string="Time Tracking"`, que Odoo 13 rechaza como selector de vistas heredadas.
+- Los campos ESI ahora se insertan usando el campo técnico `time_ids`, presente en la vista estándar `mrp.mrp_production_workorder_form_view_inherit`.
+- Se mantienen los campos ESI en el árbol y formulario embebido de partes de tiempo.
