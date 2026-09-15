@@ -58,3 +58,8 @@ Módulo instalable construido a partir de `Libro(4).xlsx`.
 5. Instalar.
 
 Al terminar la instalación, todos los datos y operaciones ya estarán generados.
+
+## Corrección 13.0.1.0.2
+- Se corrigieron los diarios `DSAL` y `DPUR`: ya no usan cuentas de tipo **Por cobrar/Por pagar** como cuentas predeterminadas débito/crédito.
+- Las cuentas `112001` y `211001` continúan correctamente asignadas a clientes y proveedor como cuentas por cobrar/pagar.
+- Se agregó una validación defensiva en `_journal()` para impedir que una cuenta `receivable` o `payable` vuelva a configurarse como cuenta predeterminada de un diario.

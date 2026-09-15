@@ -172,19 +172,60 @@ def _account(env, company, code, name=None, type_key=None):
     return _register_xmlid(env, 'account_%s' % code, rec)
 
 
-def _journal(env, company, code, name, jtype, debit_account, credit_account):
-    rec = env['account.journal'].sudo().search([('company_id', '=', company.id), ('code', '=', code)], limit=1)
-    if rec:
-        return rec
+def _journal(env, company, code, name, jtype, debit_account=None, credit_account=None):
+    """Crea un diario compatible con las restricciones contables de Odoo 13.
+
+    En Odoo 13 las cuentas predeterminadas débito/crédito de un diario NO pueden
+    ser de tipo receivable/payable. Esas cuentas pertenecen al partner y Odoo las
+    usa automáticamente como contrapartida al contabilizar facturas.
+    """
+    Journal = env['account.journal'].sudo()
+    rec = Journal.search([('company_id', '=', company.id), ('code', '=', code)], limit=1)
+
+    def _safe_default(account):
+        if not account:
+            return False
+        internal_type = getattr(account.user_type_id, 'type', False)
+        if internal_type in ('receivable', 'payable'):
+            _logger.warning(
+                'ESI Demo: se omitió la cuenta %s (%s) como predeterminada del diario %s porque es %s.',
+                account.code, account.name, code, internal_type,
+            )
+            return False
+        return account.id
+
     vals = {
         'name': name,
         'code': code,
         'type': jtype,
         'company_id': company.id,
-        'default_debit_account_id': debit_account.id,
-        'default_credit_account_id': credit_account.id,
     }
-    rec = env['account.journal'].sudo().create(vals)
+    debit_id = _safe_default(debit_account)
+    credit_id = _safe_default(credit_account)
+    if debit_id:
+        vals['default_debit_account_id'] = debit_id
+    if credit_id:
+        vals['default_credit_account_id'] = credit_id
+
+    if rec:
+        # Si quedó un diario de una instalación/intervención anterior, saneamos
+        # únicamente las cuentas predeterminadas inválidas sin tocar asientos.
+        clean_vals = {}
+        for field_name, account_id in (
+            ('default_debit_account_id', debit_id),
+            ('default_credit_account_id', credit_id),
+        ):
+            current = rec[field_name]
+            current_type = current and getattr(current.user_type_id, 'type', False)
+            if current_type in ('receivable', 'payable'):
+                clean_vals[field_name] = account_id or False
+            elif not current and account_id:
+                clean_vals[field_name] = account_id
+        if clean_vals:
+            rec.write(clean_vals)
+        return rec
+
+    rec = Journal.create(vals)
     return _register_xmlid(env, 'journal_%s' % code.lower(), rec)
 
 
@@ -292,8 +333,12 @@ def post_init_hook(cr, registry):
     # 2) Diarios mínimos para facturas y pagos.
     bank_journal = _journal(env, company, 'DBNK', 'DEMO Banco / Transferencias / QR', 'bank', accounts['111003'], accounts['111003'])
     cash_journal = _journal(env, company, 'DCSH', 'DEMO Caja', 'cash', accounts['111001'], accounts['111001'])
-    sale_journal = _journal(env, company, 'DSAL', 'DEMO Ventas', 'sale', accounts['112001'], accounts['411001'])
-    purchase_journal = _journal(env, company, 'DPUR', 'DEMO Compras', 'purchase', accounts['115001'], accounts['211001'])
+
+    # IMPORTANTE: una cuenta por cobrar/pagar NO puede ser cuenta predeterminada
+    # débito/crédito de un diario en Odoo 13. Las cuentas 112001 y 211001 se
+    # asignan más abajo a los partners; el diario usa cuentas operativas válidas.
+    sale_journal = _journal(env, company, 'DSAL', 'DEMO Ventas', 'sale', accounts['411001'], accounts['411001'])
+    purchase_journal = _journal(env, company, 'DPUR', 'DEMO Compras', 'purchase', accounts['511001'], accounts['511001'])
     general_journal = _journal(env, company, 'DGEN', 'DEMO Operaciones varias', 'general', accounts['511001'], accounts['115001'])
 
     manual_in = env.ref('account.account_payment_method_manual_in')

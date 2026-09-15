@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'ESI Demo Insumos - Compras, Inventario, Ventas y Contabilidad',
-    'version': '13.0.1.0.1',
+    'version': '13.0.1.0.2',
     'category': 'Tools',
     'summary': 'Demo integral Odoo 13 basada en el Excel de insumos de limpieza, embalaje y seguridad',
     'author': 'ESI - Especialistas en Sistemas Integrados',
