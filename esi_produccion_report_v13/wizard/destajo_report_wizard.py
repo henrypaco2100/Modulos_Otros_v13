@@ -65,6 +65,16 @@ class EsiDestajoReportWizard(models.TransientModel):
             grouped[key]['amount'] += line.amount or 0.0
         return list(grouped.values())
 
+    def esi_state_label(self, line):
+        if not line or not line.state:
+            return ''
+        field = line._fields.get('state')
+        try:
+            selection = field._description_selection(line.env) if field else []
+            return dict(selection or []).get(line.state, line.state)
+        except Exception:
+            return line.state
+
     def action_print_pdf(self):
         self.ensure_one()
         return self.env.ref('esi_produccion_report_v13.action_report_esi_destajo_global').report_action(self)

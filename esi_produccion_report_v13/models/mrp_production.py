@@ -4,6 +4,36 @@
 from odoo import fields, models
 
 
+def _esi_selection_label(record, field_name, value, default=''):
+    """Devuelve la etiqueta de un Selection de forma segura en Odoo 13.
+
+    Los campos related Selection pueden exponer ``field.selection`` como una
+    función. Convertir directamente ``dict(field.selection)`` provoca
+    TypeError: 'function' object is not iterable.
+    """
+    if not value:
+        return default
+    field = record._fields.get(field_name)
+    if not field:
+        return value or default
+    try:
+        selection = field._description_selection(record.env)
+    except Exception:
+        selection = field.selection
+        if isinstance(selection, str):
+            selection = getattr(record, selection)()
+        elif callable(selection):
+            try:
+                selection = selection(record)
+            except TypeError:
+                selection = selection(record.env[record._name])
+    try:
+        return dict(selection or []).get(value, value or default)
+    except (TypeError, ValueError):
+        return value or default
+
+
+
 class MrpProduction(models.Model):
     _inherit = 'mrp.production'
 
@@ -133,8 +163,7 @@ class MrpProduction(models.Model):
                 if 'esi_area' in operation._fields:
                     area = operation.esi_area or ''
                 if 'esi_measurement_status' in operation._fields:
-                    selection = dict(operation._fields['esi_measurement_status'].selection)
-                    measurement = selection.get(operation.esi_measurement_status, operation.esi_measurement_status or '')
+                    measurement = _esi_selection_label(operation, 'esi_measurement_status', operation.esi_measurement_status, '')
                 if 'esi_source_sheet' in operation._fields:
                     source_sheet = operation.esi_source_sheet or ''
                 if 'esi_source_row' in operation._fields:
@@ -196,7 +225,7 @@ class MrpProduction(models.Model):
             'product': self.product_id.display_name,
             'uom': self.product_id.uom_id.name or '',
             'bom': self.bom_id.display_name or '',
-            'state': dict(self._fields['state'].selection).get(self.state, self.state),
+            'state': _esi_selection_label(self, 'state', self.state, self.state),
             'responsible': self.user_id.name or '',
             'warehouse': self.picking_type_id.warehouse_id.display_name or '',
             'store': self._esi_report_store_name(),
@@ -270,7 +299,7 @@ class MrpProductionCalzadoReports(models.Model):
             actual_unit_cost = actual_cost / actual_qty if actual_qty else unit_cost
             rows.append({
                 'move_id': move.id,
-                'group': dict(move._fields['esi_material_group'].selection).get(move.esi_material_group, '') if 'esi_material_group' in move._fields and move.esi_material_group else '',
+                'group': _esi_selection_label(move, 'esi_material_group', move.esi_material_group, '') if 'esi_material_group' in move._fields and move.esi_material_group else '',
                 'product': move.product_id.display_name,
                 'uom': move.product_uom.name or '',
                 'qty_per_unit': move.esi_qty_per_unit if 'esi_qty_per_unit' in move._fields else ((planned_qty / self.product_qty) if self.product_qty else 0.0),
@@ -307,7 +336,7 @@ class MrpProductionCalzadoReports(models.Model):
                 'uom': line.uom_id.name or '',
                 'unit_price': line.unit_price or 0.0,
                 'amount': line.amount or 0.0,
-                'state': dict(line._fields['state'].selection).get(line.state, line.state or ''),
+                'state': _esi_selection_label(line, 'state', line.state, line.state or ''),
             })
         return rows
 
