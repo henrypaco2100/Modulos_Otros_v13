@@ -1,28 +1,29 @@
-# ESI - Informes de Producción v13
+# ESI Producción Report v13
 
-Módulo técnico: `esi_produccion_report_v13`.
+Actualización orientada a `esi_calzados_v13`.
 
-## Funciones
-- Wizard en Fabricación > Informes > Informes de Producción.
-- Rango por día, mes, año o fechas personalizadas.
-- Filtro por fecha planificada o fecha finalizada y por estado.
-- Agrupación por OF, producto terminado, semana, mes, responsable y, si existe Multi Store, sucursal.
-- Vista HTML, PDF y Excel.
-- Resumen de producción: planificado vs producido, cumplimiento, materiales con sobreconsumo/bajo consumo y mermas.
-- Consumo de materia prima: LdM/planificado vs consumo real, variación absoluta y porcentual.
-- Costos y margen potencial para Responsable de Producción/Administrador.
-- Reporte individual desde **Imprimir > Análisis de Producción ESI**.
-- Si existe `stock_account`, intenta usar capas de valoración; si no, usa costo estándar actual como aproximación.
-- Integración opcional con `esi_mrp_mejoras_v13`, sin convertirla en dependencia dura.
+## Reportes en Orden de Fabricación > Imprimir
+1. **ESI - Ficha de costo de producción**
+   - Cantidad requerida por unidad.
+   - Cantidad total.
+   - Costo unitario capturado.
+   - Costo material por unidad.
+   - Costo estimado total.
+   - Cantidad y costo real cuando existen capas de valoración.
+   - Destajos y valoración automática del producto terminado.
 
-## Integración nueva con tiempos y destajo ESI
-Cuando `esi_mrp_mejoras_v13` está instalado, el análisis individual de la OF incorpora por operación:
-- Área/etapa y operador.
-- Tiempo estándar en segundos por par.
-- Minutos estándar del lote y minutos reales registrados.
-- Tarifa de destajo por par.
-- Destajo planificado y destajo registrado en los partes.
-- Estado de medición.
-- Costos técnicos/centro de trabajo usados en los totales.
+2. **ESI - Faltantes de materiales y costo**
+   - Requerido, disponible, faltante.
+   - Proveedor sugerido.
+   - Precio estimado de compra.
+   - Costo total faltante.
 
-El módulo conserva compatibilidad con instalaciones donde las mejoras ESI no estén instaladas: comprueba dinámicamente la existencia de los campos adicionales.
+3. **ESI - Resumen de destajos**
+   - Resumen por trabajador: registros, cantidad y total destajo.
+   - Detalle: fecha, operador, actividad, cantidad, tarifa, importe y estado.
+
+## Reporte global de destajos
+Fabricación > Informes > **Reporte de Destajos** permite filtrar por fechas, OF, producto, operador y estado.
+
+## Corrección de costo
+La versión usa primero los campos de costo capturados por `esi_calzados_v13` y, cuando la OF ya está valorizada, toma el valor real de `stock.valuation.layer`. Esto evita el problema anterior de reportes que mostraban costo en cero aun existiendo valoración.

@@ -1,1 +1,2 @@
-from . import production_report_wizard
+# -*- coding: utf-8 -*-
+from . import destajo_report_wizard

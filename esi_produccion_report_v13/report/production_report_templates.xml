@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-    <record id="paperformat_esi_production_landscape" model="report.paperformat">
-        <field name="name">ESI Producción A4 Horizontal</field>
+    <record id="paperformat_esi_calzado_landscape" model="report.paperformat">
+        <field name="name">ESI Calzado A4 Horizontal</field>
         <field name="default" eval="False"/>
         <field name="format">A4</field>
         <field name="orientation">Landscape</field>
@@ -14,165 +14,216 @@
         <field name="dpi">90</field>
     </record>
 
-    <record id="action_report_esi_production_pdf" model="ir.actions.report">
-        <field name="name">Informe de Producción ESI</field>
-        <field name="model">esi.production.report.wizard</field>
-        <field name="report_type">qweb-pdf</field>
-        <field name="report_name">esi_produccion_report_v13.report_esi_production_wizard_document</field>
-        <field name="report_file">esi_produccion_report_v13.report_esi_production_wizard_document</field>
-        <field name="paperformat_id" ref="paperformat_esi_production_landscape"/>
-        <field name="print_report_name">'Informe_Produccion_%s_%s' % (object.date_from or '', object.date_to or '')</field>
-    </record>
-
-    <record id="action_report_esi_production_detail" model="ir.actions.report">
-        <field name="name">Análisis de Producción ESI</field>
+    <record id="action_report_esi_production_cost" model="ir.actions.report">
+        <field name="name">ESI - Ficha de costo de producción</field>
         <field name="model">mrp.production</field>
         <field name="report_type">qweb-pdf</field>
-        <field name="report_name">esi_produccion_report_v13.report_esi_production_detail_document</field>
-        <field name="report_file">esi_produccion_report_v13.report_esi_production_detail_document</field>
+        <field name="report_name">esi_produccion_report_v13.report_esi_production_cost_document</field>
+        <field name="report_file">esi_produccion_report_v13.report_esi_production_cost_document</field>
         <field name="binding_model_id" ref="mrp.model_mrp_production"/>
         <field name="binding_type">report</field>
-        <field name="paperformat_id" ref="paperformat_esi_production_landscape"/>
-        <field name="print_report_name">'Analisis_Produccion_%s' % (object.name or '')</field>
+        <field name="paperformat_id" ref="paperformat_esi_calzado_landscape"/>
+        <field name="print_report_name">'Costo_Produccion_%s' % (object.name or '')</field>
     </record>
 
-    <template id="esi_production_report_header">
-        <div style="display:flex;justify-content:space-between;align-items:flex-start;">
-            <div><img t-if="company.logo" t-att-src="image_data_uri(company.logo)" style="max-height:60px;max-width:210px;"/></div>
-            <div style="text-align:right;"><strong t-esc="company.display_name"/><br/><span t-esc="company.country_id.name or ''"/></div>
+    <record id="action_report_esi_material_shortage" model="ir.actions.report">
+        <field name="name">ESI - Faltantes de materiales y costo</field>
+        <field name="model">mrp.production</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">esi_produccion_report_v13.report_esi_material_shortage_document</field>
+        <field name="report_file">esi_produccion_report_v13.report_esi_material_shortage_document</field>
+        <field name="binding_model_id" ref="mrp.model_mrp_production"/>
+        <field name="binding_type">report</field>
+        <field name="paperformat_id" ref="paperformat_esi_calzado_landscape"/>
+        <field name="print_report_name">'Faltantes_%s' % (object.name or '')</field>
+    </record>
+
+    <record id="action_report_esi_destajo_mo" model="ir.actions.report">
+        <field name="name">ESI - Resumen de destajos</field>
+        <field name="model">mrp.production</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">esi_produccion_report_v13.report_esi_destajo_mo_document</field>
+        <field name="report_file">esi_produccion_report_v13.report_esi_destajo_mo_document</field>
+        <field name="binding_model_id" ref="mrp.model_mrp_production"/>
+        <field name="binding_type">report</field>
+        <field name="paperformat_id" ref="paperformat_esi_calzado_landscape"/>
+        <field name="print_report_name">'Destajos_%s' % (object.name or '')</field>
+    </record>
+
+    <record id="action_report_esi_destajo_global" model="ir.actions.report">
+        <field name="name">Reporte de Destajos ESI</field>
+        <field name="model">esi.destajo.report.wizard</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">esi_produccion_report_v13.report_esi_destajo_global_document</field>
+        <field name="report_file">esi_produccion_report_v13.report_esi_destajo_global_document</field>
+        <field name="paperformat_id" ref="paperformat_esi_calzado_landscape"/>
+        <field name="print_report_name">'Reporte_Destajos_ESI'</field>
+    </record>
+
+    <template id="esi_report_header">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px;">
+            <div>
+                <img t-if="company.logo" t-att-src="image_data_uri(company.logo)" style="max-height:55px;max-width:190px;"/>
+            </div>
+            <div style="text-align:right;font-size:9px;">
+                <strong t-esc="company.display_name"/><br/>
+                <span t-esc="company.vat or ''"/>
+            </div>
         </div>
     </template>
 
-    <template id="report_esi_production_wizard_document">
+    <template id="report_esi_production_cost_document">
         <t t-call="web.html_container">
             <t t-foreach="docs" t-as="o">
-                <t t-set="d" t-value="o._build_report_data()"/>
-                <div class="page" style="font-family:Arial,sans-serif;font-size:9px;">
-                    <t t-set="company" t-value="d['company']"/>
-                    <t t-call="esi_produccion_report_v13.esi_production_report_header"/>
-                    <h2 style="text-align:center;color:#3f4b57;margin:10px 0;" t-esc="d['title']"/>
-                    <table style="width:100%;font-size:9px;margin-bottom:7px;">
-                        <tr><td><strong>Compañía:</strong> <span t-esc="d['company'].display_name"/></td><td><strong>Rango:</strong> <span t-esc="d['period']"/></td></tr>
-                        <tr><td><strong>Agrupado por:</strong> <span t-esc="d['group_label']"/></td><td><strong>Fecha:</strong> <span t-esc="d['date_basis_label']"/> | <strong>Estado:</strong> <span t-esc="d['state_label']"/></td></tr>
+                <t t-set="company" t-value="o.company_id"/>
+                <t t-set="rows" t-value="o.esi_report_material_rows()"/>
+                <t t-set="tot" t-value="o.esi_report_cost_summary()"/>
+                <div class="page" style="font-family:Arial,sans-serif;font-size:8px;">
+                    <t t-call="esi_produccion_report_v13.esi_report_header"/>
+                    <h2 style="text-align:center;color:#072955;margin:4px 0 8px 0;">FICHA DE COSTO DE PRODUCCIÓN</h2>
+                    <table style="width:100%;margin-bottom:7px;font-size:8px;">
+                        <tr>
+                            <td><strong>OF:</strong> <span t-esc="o.name"/></td>
+                            <td><strong>Producto:</strong> <span t-esc="o.product_id.display_name"/></td>
+                            <td><strong>Cantidad:</strong> <span t-esc="'%.2f' % o.product_qty"/> <span t-esc="o.product_uom_id.name"/></td>
+                        </tr>
+                        <tr>
+                            <td><strong>Variante:</strong> <span t-esc="o.esi_variant_info or '-'"/></td>
+                            <td><strong>Analítica:</strong> <span t-esc="o.esi_analytic_account_id.display_name or '-'"/></td>
+                            <td><strong>Estado:</strong> <span t-esc="o.state"/></td>
+                        </tr>
                     </table>
-                    <div style="margin-bottom:5px;"><strong>Órdenes incluidas:</strong> <span t-esc="d['mo_count']"/></div>
-                    <t t-if="not d['groups']"><div style="border:1px solid #bbb;padding:25px;text-align:center;">No se encontraron órdenes de producción con los filtros seleccionados.</div></t>
-
-                    <t t-foreach="d['groups']" t-as="g">
-                        <div style="background:#eef3f7;border:1px solid #b8c3cc;padding:4px 6px;margin-top:7px;font-weight:bold;"><span t-esc="d['group_label']"/>: <span t-esc="g['name']"/></div>
-                        <t t-if="d['report_type'] == 'summary'">
-                            <table style="border-collapse:collapse;width:100%;font-size:8px;">
-                                <thead><tr style="background:#e7edf3;"><th style="border:1px solid #89949e;padding:3px;">PRODUCTO</th><th style="border:1px solid #89949e;padding:3px;">UDM</th><th style="border:1px solid #89949e;padding:3px;"># OF</th><th style="border:1px solid #89949e;padding:3px;">PLANIFICADO</th><th style="border:1px solid #89949e;padding:3px;">PRODUCIDO</th><th style="border:1px solid #89949e;padding:3px;">DIFERENCIA</th><th style="border:1px solid #89949e;padding:3px;">CUMPLIMIENTO</th><th style="border:1px solid #89949e;padding:3px;">MAT. SOBRECONSUMO</th><th style="border:1px solid #89949e;padding:3px;">MAT. BAJO CONSUMO</th><th style="border:1px solid #89949e;padding:3px;">MERMAS</th></tr></thead>
-                                <tbody><tr t-foreach="g['rows']" t-as="r"><td style="border:1px solid #aab2b9;padding:3px;"><span t-esc="r['product']"/></td><td style="border:1px solid #aab2b9;padding:3px;text-align:center;"><span t-esc="r['uom']"/></td><td style="border:1px solid #aab2b9;padding:3px;text-align:center;"><span t-esc="r['mo_count']"/></td><td style="border:1px solid #aab2b9;padding:3px;text-align:right;"><span t-esc="o._fmt_qty(r['planned_qty'])"/></td><td style="border:1px solid #aab2b9;padding:3px;text-align:right;"><span t-esc="o._fmt_qty(r['produced_qty'])"/></td><td style="border:1px solid #aab2b9;padding:3px;text-align:right;"><span t-esc="o._fmt_qty(r['difference_qty'])"/></td><td style="border:1px solid #aab2b9;padding:3px;text-align:right;"><span t-esc="o._fmt_pct(r['efficiency'])"/></td><td style="border:1px solid #aab2b9;padding:3px;text-align:center;"><span t-esc="r['over_lines']"/></td><td style="border:1px solid #aab2b9;padding:3px;text-align:center;"><span t-esc="r['under_lines']"/></td><td style="border:1px solid #aab2b9;padding:3px;text-align:center;"><span t-esc="r['scrap_count']"/></td></tr></tbody>
-                            </table>
-                        </t>
-                        <t t-if="d['report_type'] == 'materials'">
-                            <table style="border-collapse:collapse;width:100%;font-size:8px;">
-                                <thead><tr style="background:#e7edf3;"><th style="border:1px solid #89949e;padding:3px;">MATERIA PRIMA</th><th style="border:1px solid #89949e;padding:3px;">UDM</th><th style="border:1px solid #89949e;padding:3px;">PLANIFICADO LdM</th><th style="border:1px solid #89949e;padding:3px;">CONSUMO REAL</th><th style="border:1px solid #89949e;padding:3px;">VARIACIÓN</th><th style="border:1px solid #89949e;padding:3px;">VAR. %</th><th t-if="d['can_costs']" style="border:1px solid #89949e;padding:3px;">COSTO PLAN.</th><th t-if="d['can_costs']" style="border:1px solid #89949e;padding:3px;">COSTO REAL</th><th t-if="d['can_costs']" style="border:1px solid #89949e;padding:3px;">VAR. COSTO</th></tr></thead>
-                                <tbody>
-                                    <tr t-foreach="g['rows']" t-as="r"><td style="border:1px solid #aab2b9;padding:3px;"><span t-esc="r['product']"/></td><td style="border:1px solid #aab2b9;padding:3px;text-align:center;"><span t-esc="r['uom']"/></td><td style="border:1px solid #aab2b9;padding:3px;text-align:right;"><span t-esc="o._fmt_qty(r['planned_qty'])"/></td><td style="border:1px solid #aab2b9;padding:3px;text-align:right;"><span t-esc="o._fmt_qty(r['actual_qty'])"/></td><td style="border:1px solid #aab2b9;padding:3px;text-align:right;"><span t-esc="o._fmt_qty(r['variance_qty'])"/></td><td style="border:1px solid #aab2b9;padding:3px;text-align:right;"><span t-esc="o._fmt_pct(r['variance_pct'])"/></td><td t-if="d['can_costs']" style="border:1px solid #aab2b9;padding:3px;text-align:right;"><span t-esc="o._fmt_money(r['planned_cost'])"/></td><td t-if="d['can_costs']" style="border:1px solid #aab2b9;padding:3px;text-align:right;"><span t-esc="o._fmt_money(r['actual_cost'])"/></td><td t-if="d['can_costs']" style="border:1px solid #aab2b9;padding:3px;text-align:right;"><span t-esc="o._fmt_money(r['cost_variance'])"/></td></tr>
-                                    <tr t-if="d['can_costs']" style="font-weight:bold;background:#f7f8f9;"><td colspan="6" style="border:1px solid #89949e;padding:4px;text-align:right;">COSTO DEL GRUPO</td><td style="border:1px solid #89949e;padding:4px;text-align:right;"><span t-esc="o._fmt_money(g['planned_cost'])"/></td><td style="border:1px solid #89949e;padding:4px;text-align:right;"><span t-esc="o._fmt_money(g['actual_cost'])"/></td><td style="border:1px solid #89949e;padding:4px;text-align:right;"><span t-esc="o._fmt_money(g['cost_variance'])"/></td></tr>
-                                </tbody>
-                            </table>
-                            <div style="font-size:8px;margin:4px 0;"><strong>Materiales sobreconsumidos:</strong> <span t-esc="g['over_lines']"/> | <strong>Materiales por debajo:</strong> <span t-esc="g['under_lines']"/></div>
-                        </t>
-                        <t t-if="d['report_type'] == 'cost_margin'">
-                            <table style="border-collapse:collapse;width:100%;font-size:7.5px;">
-                                <thead><tr style="background:#e7edf3;"><th style="border:1px solid #89949e;padding:3px;">PRODUCTO</th><th style="border:1px solid #89949e;padding:3px;">UDM</th><th style="border:1px solid #89949e;padding:3px;"># OF</th><th style="border:1px solid #89949e;padding:3px;">PRODUCIDO</th><th style="border:1px solid #89949e;padding:3px;">COSTO MATERIAL</th><th style="border:1px solid #89949e;padding:3px;">COSTO OPER.</th><th style="border:1px solid #89949e;padding:3px;">COSTO TOTAL</th><th style="border:1px solid #89949e;padding:3px;">COSTO/UD</th><th style="border:1px solid #89949e;padding:3px;">PVP LISTA</th><th style="border:1px solid #89949e;padding:3px;">VALOR POTENCIAL</th><th style="border:1px solid #89949e;padding:3px;">MARGEN POTENCIAL</th><th style="border:1px solid #89949e;padding:3px;">MARGEN %</th></tr></thead>
-                                <tbody>
-                                    <tr t-foreach="g['rows']" t-as="r"><td style="border:1px solid #aab2b9;padding:2px;"><span t-esc="r['product']"/></td><td style="border:1px solid #aab2b9;padding:2px;text-align:center;"><span t-esc="r['uom']"/></td><td style="border:1px solid #aab2b9;padding:2px;text-align:center;"><span t-esc="r['mo_count']"/></td><td style="border:1px solid #aab2b9;padding:2px;text-align:right;"><span t-esc="o._fmt_qty(r['produced_qty'])"/></td><td style="border:1px solid #aab2b9;padding:2px;text-align:right;"><span t-esc="o._fmt_money(r['material_cost'])"/></td><td style="border:1px solid #aab2b9;padding:2px;text-align:right;"><span t-esc="o._fmt_money(r['operation_cost'])"/></td><td style="border:1px solid #aab2b9;padding:2px;text-align:right;"><span t-esc="o._fmt_money(r['total_cost'])"/></td><td style="border:1px solid #aab2b9;padding:2px;text-align:right;"><span t-esc="o._fmt_money(r['unit_cost'])"/></td><td style="border:1px solid #aab2b9;padding:2px;text-align:right;"><span t-esc="o._fmt_money(r['sale_price'])"/></td><td style="border:1px solid #aab2b9;padding:2px;text-align:right;"><span t-esc="o._fmt_money(r['potential_revenue'])"/></td><td style="border:1px solid #aab2b9;padding:2px;text-align:right;"><span t-esc="o._fmt_money(r['potential_margin'])"/></td><td style="border:1px solid #aab2b9;padding:2px;text-align:right;"><span t-esc="o._fmt_pct(r['margin_pct'])"/></td></tr>
-                                    <tr style="font-weight:bold;background:#f7f8f9;"><td colspan="4" style="border:1px solid #89949e;padding:3px;text-align:right;">TOTALES DEL GRUPO</td><td style="border:1px solid #89949e;padding:3px;text-align:right;"><span t-esc="o._fmt_money(g['material_cost'])"/></td><td style="border:1px solid #89949e;padding:3px;text-align:right;"><span t-esc="o._fmt_money(g['operation_cost'])"/></td><td style="border:1px solid #89949e;padding:3px;text-align:right;"><span t-esc="o._fmt_money(g['total_cost'])"/></td><td colspan="2" style="border:1px solid #89949e;padding:3px;"></td><td style="border:1px solid #89949e;padding:3px;text-align:right;"><span t-esc="o._fmt_money(g['potential_revenue'])"/></td><td style="border:1px solid #89949e;padding:3px;text-align:right;"><span t-esc="o._fmt_money(g['potential_margin'])"/></td><td style="border:1px solid #89949e;padding:3px;"></td></tr>
-                                </tbody>
-                            </table>
-                        </t>
-                    </t>
-                    <p t-if="d['note']" style="font-size:7.5px;color:#666;margin-top:6px;" t-esc="d['note']"/>
+                    <table style="border-collapse:collapse;width:100%;font-size:7.4px;">
+                        <thead>
+                            <tr style="background:#072955;color:white;">
+                                <th style="border:1px solid #8ca0b3;padding:4px;">DETALLE</th>
+                                <th style="border:1px solid #8ca0b3;padding:4px;">MATERIAL</th>
+                                <th style="border:1px solid #8ca0b3;padding:4px;">CANT./UNID.</th>
+                                <th style="border:1px solid #8ca0b3;padding:4px;">UDM</th>
+                                <th style="border:1px solid #8ca0b3;padding:4px;">COSTO UNIT.</th>
+                                <th style="border:1px solid #8ca0b3;padding:4px;">COSTO MAT./UNID.</th>
+                                <th style="border:1px solid #8ca0b3;padding:4px;">CANT. TOTAL</th>
+                                <th style="border:1px solid #8ca0b3;padding:4px;">COSTO EST.</th>
+                                <th style="border:1px solid #8ca0b3;padding:4px;">CANT. REAL</th>
+                                <th style="border:1px solid #8ca0b3;padding:4px;">COSTO REAL</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr t-foreach="rows" t-as="r">
+                                <td style="border:1px solid #ccd5dd;padding:3px;"><span t-esc="r['group']"/></td>
+                                <td style="border:1px solid #ccd5dd;padding:3px;"><span t-esc="r['product']"/></td>
+                                <td style="border:1px solid #ccd5dd;padding:3px;text-align:right;"><span t-esc="'%.4f' % r['qty_per_unit']"/></td>
+                                <td style="border:1px solid #ccd5dd;padding:3px;text-align:center;"><span t-esc="r['uom']"/></td>
+                                <td style="border:1px solid #ccd5dd;padding:3px;text-align:right;"><span t-esc="'%.2f' % r['unit_cost']"/></td>
+                                <td style="border:1px solid #ccd5dd;padding:3px;text-align:right;"><span t-esc="'%.2f' % r['unit_material_cost']"/></td>
+                                <td style="border:1px solid #ccd5dd;padding:3px;text-align:right;"><span t-esc="'%.2f' % r['planned_qty']"/></td>
+                                <td style="border:1px solid #ccd5dd;padding:3px;text-align:right;"><span t-esc="'%.2f' % r['planned_cost']"/></td>
+                                <td style="border:1px solid #ccd5dd;padding:3px;text-align:right;"><span t-esc="'%.2f' % r['actual_qty']"/></td>
+                                <td style="border:1px solid #ccd5dd;padding:3px;text-align:right;"><span t-esc="'%.2f' % r['actual_cost']"/></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <div style="margin-top:8px;display:flex;justify-content:flex-end;">
+                        <table style="border-collapse:collapse;width:46%;font-size:8px;">
+                            <tr><td style="border:1px solid #ccd5dd;padding:4px;"><strong>Material estimado</strong></td><td style="border:1px solid #ccd5dd;padding:4px;text-align:right;">Bs <span t-esc="'%.2f' % tot['material_estimated']"/></td></tr>
+                            <tr><td style="border:1px solid #ccd5dd;padding:4px;"><strong>Destajos registrados</strong></td><td style="border:1px solid #ccd5dd;padding:4px;text-align:right;">Bs <span t-esc="'%.2f' % tot['destajo_all']"/></td></tr>
+                            <tr><td style="border:1px solid #ccd5dd;padding:4px;"><strong>Total estimado OF</strong></td><td style="border:1px solid #ccd5dd;padding:4px;text-align:right;">Bs <span t-esc="'%.2f' % tot['estimated_total']"/></td></tr>
+                            <tr><td style="border:1px solid #ccd5dd;padding:4px;"><strong>Costo estimado / unidad</strong></td><td style="border:1px solid #ccd5dd;padding:4px;text-align:right;">Bs <span t-esc="'%.2f' % tot['estimated_unit']"/></td></tr>
+                            <tr t-if="tot['finished_valuation']"><td style="border:1px solid #ccd5dd;padding:4px;"><strong>Valoración automática producto terminado</strong></td><td style="border:1px solid #ccd5dd;padding:4px;text-align:right;">Bs <span t-esc="'%.2f' % tot['finished_valuation']"/></td></tr>
+                            <tr t-if="tot['finished_valuation']"><td style="border:1px solid #ccd5dd;padding:4px;"><strong>Valorado / unidad</strong></td><td style="border:1px solid #ccd5dd;padding:4px;text-align:right;">Bs <span t-esc="'%.2f' % tot['finished_valuation_unit']"/></td></tr>
+                        </table>
+                    </div>
                 </div>
             </t>
         </t>
     </template>
 
-    <template id="report_esi_production_detail_document">
+    <template id="report_esi_material_shortage_document">
         <t t-call="web.html_container">
             <t t-foreach="docs" t-as="o">
-                <t t-set="d" t-value="o._esi_report_detail_data(include_costs=True)"/>
                 <t t-set="company" t-value="o.company_id"/>
-                <div class="page" style="font-family:Arial,sans-serif;font-size:9px;">
-                    <t t-call="esi_produccion_report_v13.esi_production_report_header"/>
-                    <h2 style="text-align:center;color:#3f4b57;margin:10px 0;">ANÁLISIS DE PRODUCCIÓN</h2>
-                    <table style="width:100%;font-size:9px;margin-bottom:8px;">
-                        <tr><td><strong>Orden:</strong> <span t-esc="d['reference']"/></td><td><strong>Producto:</strong> <span t-esc="d['product']"/></td><td><strong>Estado:</strong> <span t-esc="d['state']"/></td></tr>
-                        <tr><td><strong>LdM:</strong> <span t-esc="d['bom']"/></td><td><strong>Responsable:</strong> <span t-esc="d['responsible']"/></td><td><strong>Almacén:</strong> <span t-esc="d['warehouse']"/></td></tr>
-                        <tr t-if="d['store']"><td><strong>Sucursal:</strong> <span t-esc="d['store']"/></td><td colspan="2"></td></tr>
+                <t t-set="rows" t-value="o.esi_report_shortage_rows()"/>
+                <div class="page" style="font-family:Arial,sans-serif;font-size:8px;">
+                    <t t-call="esi_produccion_report_v13.esi_report_header"/>
+                    <h2 style="text-align:center;color:#072955;margin:4px 0 8px 0;">FALTANTES DE MATERIALES Y COSTO</h2>
+                    <p><strong>Orden de fabricación:</strong> <span t-esc="o.name"/> | <strong>Producto:</strong> <span t-esc="o.product_id.display_name"/> | <strong>Cantidad:</strong> <span t-esc="'%.2f' % o.product_qty"/> <span t-esc="o.product_uom_id.name"/></p>
+                    <p style="font-size:7.5px;">Documento para que el encargado de producción solicite o prepare la compra de los materiales que no están disponibles para la OF.</p>
+                    <t t-if="not rows"><div style="border:1px solid #009846;padding:18px;text-align:center;">No existen faltantes según la disponibilidad actual.</div></t>
+                    <table t-if="rows" style="border-collapse:collapse;width:100%;font-size:7.6px;">
+                        <thead><tr style="background:#072955;color:white;">
+                            <th style="border:1px solid #8ca0b3;padding:4px;">MATERIAL</th>
+                            <th style="border:1px solid #8ca0b3;padding:4px;">REQUERIDO</th>
+                            <th style="border:1px solid #8ca0b3;padding:4px;">DISPONIBLE</th>
+                            <th style="border:1px solid #8ca0b3;padding:4px;">FALTANTE</th>
+                            <th style="border:1px solid #8ca0b3;padding:4px;">UDM</th>
+                            <th style="border:1px solid #8ca0b3;padding:4px;">PROVEEDOR SUGERIDO</th>
+                            <th style="border:1px solid #8ca0b3;padding:4px;">COSTO UNIT. EST.</th>
+                            <th style="border:1px solid #8ca0b3;padding:4px;">COSTO FALTANTE</th>
+                        </tr></thead>
+                        <tbody><tr t-foreach="rows" t-as="r">
+                            <td style="border:1px solid #ccd5dd;padding:3px;"><span t-esc="r['product']"/></td>
+                            <td style="border:1px solid #ccd5dd;padding:3px;text-align:right;"><span t-esc="'%.2f' % r['planned_qty']"/></td>
+                            <td style="border:1px solid #ccd5dd;padding:3px;text-align:right;"><span t-esc="'%.2f' % r['available_qty']"/></td>
+                            <td style="border:1px solid #ccd5dd;padding:3px;text-align:right;"><strong t-esc="'%.2f' % r['missing_qty']"/></td>
+                            <td style="border:1px solid #ccd5dd;padding:3px;text-align:center;"><span t-esc="r['uom']"/></td>
+                            <td style="border:1px solid #ccd5dd;padding:3px;"><span t-esc="r['supplier'] or '-'"/></td>
+                            <td style="border:1px solid #ccd5dd;padding:3px;text-align:right;">Bs <span t-esc="'%.2f' % r['purchase_unit_cost']"/></td>
+                            <td style="border:1px solid #ccd5dd;padding:3px;text-align:right;">Bs <strong t-esc="'%.2f' % r['missing_cost']"/></td>
+                        </tr></tbody>
+                        <tfoot><tr style="background:#eef4fa;"><td colspan="7" style="border:1px solid #ccd5dd;padding:4px;text-align:right;"><strong>TOTAL COSTO ESTIMADO FALTANTE</strong></td><td style="border:1px solid #ccd5dd;padding:4px;text-align:right;"><strong>Bs <span t-esc="'%.2f' % sum([r['missing_cost'] for r in rows])"/></strong></td></tr></tfoot>
                     </table>
-                    <table style="border-collapse:collapse;width:100%;font-size:9px;margin-bottom:8px;">
-                        <tr style="background:#eef3f7;font-weight:bold;"><td style="border:1px solid #89949e;padding:5px;">Planificado</td><td style="border:1px solid #89949e;padding:5px;">Producido</td><td style="border:1px solid #89949e;padding:5px;">Diferencia</td><td style="border:1px solid #89949e;padding:5px;">Cumplimiento</td><td style="border:1px solid #89949e;padding:5px;">Duración real</td><td style="border:1px solid #89949e;padding:5px;">Mermas</td></tr>
-                        <tr><td style="border:1px solid #aab2b9;padding:5px;text-align:right;"><span t-esc="o._esi_report_fmt_qty(d['planned_qty'])"/> <span t-esc="d['uom']"/></td><td style="border:1px solid #aab2b9;padding:5px;text-align:right;"><span t-esc="o._esi_report_fmt_qty(d['produced_qty'])"/> <span t-esc="d['uom']"/></td><td style="border:1px solid #aab2b9;padding:5px;text-align:right;"><span t-esc="o._esi_report_fmt_qty(d['output_variance'])"/></td><td style="border:1px solid #aab2b9;padding:5px;text-align:right;"><span t-esc="o._esi_report_fmt_pct(d['efficiency'])"/>%</td><td style="border:1px solid #aab2b9;padding:5px;text-align:right;"><span t-esc="o._esi_report_fmt(d['duration_hours'], 2)"/> h</td><td style="border:1px solid #aab2b9;padding:5px;text-align:center;"><span t-esc="d['scrap_count']"/></td></tr>
+                </div>
+            </t>
+        </t>
+    </template>
+
+    <template id="report_esi_destajo_mo_document">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="o">
+                <t t-set="company" t-value="o.company_id"/>
+                <t t-set="summary" t-value="o.esi_report_destajo_summary()"/>
+                <t t-set="rows" t-value="o.esi_report_destajo_rows()"/>
+                <div class="page" style="font-family:Arial,sans-serif;font-size:8px;">
+                    <t t-call="esi_produccion_report_v13.esi_report_header"/>
+                    <h2 style="text-align:center;color:#072955;margin:4px 0 8px 0;">RESUMEN DE DESTAJOS</h2>
+                    <p><strong>OF:</strong> <span t-esc="o.name"/> | <strong>Producto:</strong> <span t-esc="o.product_id.display_name"/> | <strong>Variante:</strong> <span t-esc="o.esi_variant_info or '-'"/></p>
+                    <h3 style="color:#072955;">Resumen por trabajador</h3>
+                    <table style="border-collapse:collapse;width:100%;font-size:8px;margin-bottom:8px;">
+                        <thead><tr style="background:#eef4fa;color:#072955;"><th style="border:1px solid #ccd5dd;padding:4px;">TRABAJADOR</th><th style="border:1px solid #ccd5dd;padding:4px;">REGISTROS</th><th style="border:1px solid #ccd5dd;padding:4px;">CANTIDAD</th><th style="border:1px solid #ccd5dd;padding:4px;">TOTAL DESTAJO</th></tr></thead>
+                        <tbody><tr t-foreach="summary" t-as="s"><td style="border:1px solid #ccd5dd;padding:4px;"><span t-esc="s['worker']"/></td><td style="border:1px solid #ccd5dd;padding:4px;text-align:center;"><span t-esc="s['records']"/></td><td style="border:1px solid #ccd5dd;padding:4px;text-align:right;"><span t-esc="'%.2f' % s['quantity']"/></td><td style="border:1px solid #ccd5dd;padding:4px;text-align:right;"><strong>Bs <span t-esc="'%.2f' % s['amount']"/></strong></td></tr></tbody>
+                        <tfoot><tr style="background:#f5f7f9;"><td style="border:1px solid #ccd5dd;padding:4px;"><strong>TOTAL GENERAL</strong></td><td style="border:1px solid #ccd5dd;padding:4px;text-align:center;"><strong t-esc="len(rows)"/></td><td style="border:1px solid #ccd5dd;padding:4px;text-align:right;"><strong t-esc="'%.2f' % sum([x['quantity'] for x in rows])"/></td><td style="border:1px solid #ccd5dd;padding:4px;text-align:right;"><strong>Bs <span t-esc="'%.2f' % sum([x['amount'] for x in rows])"/></strong></td></tr></tfoot>
                     </table>
-
-                    <h4 style="margin:8px 0 4px;">Consumo de Materia Prima: LdM vs Real</h4>
-                    <table style="border-collapse:collapse;width:100%;font-size:8px;">
-                        <thead><tr style="background:#e7edf3;"><th style="border:1px solid #89949e;padding:3px;">MATERIA PRIMA</th><th style="border:1px solid #89949e;padding:3px;">UDM</th><th style="border:1px solid #89949e;padding:3px;">PLANIFICADO</th><th style="border:1px solid #89949e;padding:3px;">REAL</th><th style="border:1px solid #89949e;padding:3px;">VARIACIÓN</th><th style="border:1px solid #89949e;padding:3px;">VAR. %</th><th t-if="d['can_costs']" style="border:1px solid #89949e;padding:3px;">COSTO PLAN.</th><th t-if="d['can_costs']" style="border:1px solid #89949e;padding:3px;">COSTO REAL</th><th t-if="d['can_costs']" style="border:1px solid #89949e;padding:3px;">VAR. COSTO</th></tr></thead>
-                        <tbody><tr t-foreach="d['material_rows']" t-as="r"><td style="border:1px solid #aab2b9;padding:3px;"><span t-esc="r['product']"/></td><td style="border:1px solid #aab2b9;padding:3px;text-align:center;"><span t-esc="r['uom']"/></td><td style="border:1px solid #aab2b9;padding:3px;text-align:right;"><span t-esc="o._esi_report_fmt_qty(r['planned_qty'])"/></td><td style="border:1px solid #aab2b9;padding:3px;text-align:right;"><span t-esc="o._esi_report_fmt_qty(r['actual_qty'])"/></td><td style="border:1px solid #aab2b9;padding:3px;text-align:right;"><span t-esc="o._esi_report_fmt_qty(r['variance_qty'])"/></td><td style="border:1px solid #aab2b9;padding:3px;text-align:right;"><span t-esc="o._esi_report_fmt_pct(r['variance_pct'])"/>%</td><td t-if="d['can_costs']" style="border:1px solid #aab2b9;padding:3px;text-align:right;"><span t-esc="o._esi_report_fmt_money(r['planned_cost'])"/></td><td t-if="d['can_costs']" style="border:1px solid #aab2b9;padding:3px;text-align:right;"><span t-esc="o._esi_report_fmt_money(r['actual_cost'])"/></td><td t-if="d['can_costs']" style="border:1px solid #aab2b9;padding:3px;text-align:right;"><span t-esc="o._esi_report_fmt_money(r['cost_variance'])"/></td></tr></tbody>
+                    <h3 style="color:#072955;">Reporte detallado</h3>
+                    <table style="border-collapse:collapse;width:100%;font-size:7.5px;">
+                        <thead><tr style="background:#072955;color:white;"><th style="border:1px solid #8ca0b3;padding:4px;">FECHA</th><th style="border:1px solid #8ca0b3;padding:4px;">TRABAJADOR</th><th style="border:1px solid #8ca0b3;padding:4px;">ACTIVIDAD</th><th style="border:1px solid #8ca0b3;padding:4px;">DETALLE</th><th style="border:1px solid #8ca0b3;padding:4px;">CANTIDAD</th><th style="border:1px solid #8ca0b3;padding:4px;">UDM</th><th style="border:1px solid #8ca0b3;padding:4px;">PRECIO/UNID.</th><th style="border:1px solid #8ca0b3;padding:4px;">TOTAL</th><th style="border:1px solid #8ca0b3;padding:4px;">ESTADO</th></tr></thead>
+                        <tbody><tr t-foreach="rows" t-as="r"><td style="border:1px solid #ccd5dd;padding:3px;"><span t-esc="r['date']"/></td><td style="border:1px solid #ccd5dd;padding:3px;"><span t-esc="r['worker']"/></td><td style="border:1px solid #ccd5dd;padding:3px;"><span t-esc="r['activity']"/></td><td style="border:1px solid #ccd5dd;padding:3px;"><span t-esc="r['description']"/></td><td style="border:1px solid #ccd5dd;padding:3px;text-align:right;"><span t-esc="'%.2f' % r['quantity']"/></td><td style="border:1px solid #ccd5dd;padding:3px;"><span t-esc="r['uom']"/></td><td style="border:1px solid #ccd5dd;padding:3px;text-align:right;">Bs <span t-esc="'%.2f' % r['unit_price']"/></td><td style="border:1px solid #ccd5dd;padding:3px;text-align:right;"><strong>Bs <span t-esc="'%.2f' % r['amount']"/></strong></td><td style="border:1px solid #ccd5dd;padding:3px;"><span t-esc="r['state']"/></td></tr></tbody>
                     </table>
-                    <div style="margin:4px 0;font-size:8px;"><strong>Sobreconsumo:</strong> <span t-esc="d['over_material_count']"/> materiales | <strong>Bajo consumo:</strong> <span t-esc="d['under_material_count']"/> materiales</div>
+                </div>
+            </t>
+        </t>
+    </template>
 
-                    <t t-if="d['operation_rows']">
-                        <h4 style="margin:8px 0 4px;">Operaciones / Centros de Trabajo / Partes de Producción</h4>
-                        <table style="border-collapse:collapse;width:100%;font-size:7px;">
-                            <thead>
-                                <tr style="background:#e7edf3;">
-                                    <th style="border:1px solid #89949e;padding:2px;">OPERACIÓN</th>
-                                    <th style="border:1px solid #89949e;padding:2px;">ÁREA</th>
-                                    <th style="border:1px solid #89949e;padding:2px;">OPERADOR</th>
-                                    <th style="border:1px solid #89949e;padding:2px;">CENTRO</th>
-                                    <th style="border:1px solid #89949e;padding:2px;">EST. SEG/PAR</th>
-                                    <th style="border:1px solid #89949e;padding:2px;">EST. MIN LOTE</th>
-                                    <th style="border:1px solid #89949e;padding:2px;">REAL MIN</th>
-                                    <th style="border:1px solid #89949e;padding:2px;">DEST. Bs/PAR</th>
-                                    <th style="border:1px solid #89949e;padding:2px;">DEST. PREV.</th>
-                                    <th style="border:1px solid #89949e;padding:2px;">DEST. REG.</th>
-                                    <th style="border:1px solid #89949e;padding:2px;">MEDICIÓN</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr t-foreach="d['operation_rows']" t-as="r">
-                                    <td style="border:1px solid #aab2b9;padding:2px;"><span t-esc="r['name']"/></td>
-                                    <td style="border:1px solid #aab2b9;padding:2px;"><span t-esc="r['area']"/></td>
-                                    <td style="border:1px solid #aab2b9;padding:2px;"><span t-esc="r['operator']"/></td>
-                                    <td style="border:1px solid #aab2b9;padding:2px;"><span t-esc="r['workcenter']"/></td>
-                                    <td style="border:1px solid #aab2b9;padding:2px;text-align:right;"><span t-esc="o._esi_report_fmt(r['standard_seconds_pair'], 2)"/></td>
-                                    <td style="border:1px solid #aab2b9;padding:2px;text-align:right;"><span t-esc="o._esi_report_fmt(r['standard_minutes_total'], 2)"/></td>
-                                    <td style="border:1px solid #aab2b9;padding:2px;text-align:right;"><span t-esc="o._esi_report_fmt(r['actual_minutes'], 2)"/></td>
-                                    <td style="border:1px solid #aab2b9;padding:2px;text-align:right;"><span t-esc="o._esi_report_fmt_money(r['piece_rate'])"/></td>
-                                    <td style="border:1px solid #aab2b9;padding:2px;text-align:right;"><span t-esc="o._esi_report_fmt_money(r['planned_piecework'])"/></td>
-                                    <td style="border:1px solid #aab2b9;padding:2px;text-align:right;"><span t-esc="o._esi_report_fmt_money(r['registered_piecework'])"/></td>
-                                    <td style="border:1px solid #aab2b9;padding:2px;text-align:center;"><span t-esc="r['measurement_status']"/></td>
-                                </tr>
-                                <tr style="font-weight:bold;background:#f7f8f9;">
-                                    <td colspan="5" style="border:1px solid #89949e;padding:3px;text-align:right;">TOTALES OPERACIONES</td>
-                                    <td style="border:1px solid #89949e;padding:3px;text-align:right;"><span t-esc="o._esi_report_fmt(d['standard_operation_minutes'], 2)"/></td>
-                                    <td style="border:1px solid #89949e;padding:3px;text-align:right;"><span t-esc="o._esi_report_fmt(d['actual_operation_minutes'], 2)"/></td>
-                                    <td style="border:1px solid #89949e;padding:3px;"></td>
-                                    <td style="border:1px solid #89949e;padding:3px;text-align:right;"><span t-esc="o._esi_report_fmt_money(d['piecework_planned_total'])"/></td>
-                                    <td style="border:1px solid #89949e;padding:3px;text-align:right;"><span t-esc="o._esi_report_fmt_money(d['piecework_registered_total'])"/></td>
-                                    <td style="border:1px solid #89949e;padding:3px;"></td>
-                                </tr>
-                            </tbody>
-                        </table>
-                        <p t-if="d['has_esi_operations']" style="font-size:7px;color:#666;margin-top:3px;">
-                            En operaciones ESI, “destajo previsto” usa cantidad planificada × tarifa por par; “destajo registrado” suma los partes de producción realmente cargados.
-                        </p>
-                    </t>
-
-                    <t t-if="d['can_costs']">
-                        <h4 style="margin:8px 0 4px;">Costo y Margen Potencial</h4>
-                        <table style="border-collapse:collapse;width:100%;font-size:8px;">
-                            <tr style="background:#eef3f7;font-weight:bold;"><td style="border:1px solid #89949e;padding:4px;">Costo materiales</td><td style="border:1px solid #89949e;padding:4px;">Costo operaciones</td><td style="border:1px solid #89949e;padding:4px;">Costo total</td><td style="border:1px solid #89949e;padding:4px;">Costo/UD</td><td style="border:1px solid #89949e;padding:4px;">PVP lista</td><td style="border:1px solid #89949e;padding:4px;">Valor potencial</td><td style="border:1px solid #89949e;padding:4px;">Margen potencial</td><td style="border:1px solid #89949e;padding:4px;">Margen %</td></tr>
-                            <tr><td style="border:1px solid #aab2b9;padding:4px;text-align:right;"><span t-esc="o._esi_report_fmt_money(d['material_actual_cost'])"/></td><td style="border:1px solid #aab2b9;padding:4px;text-align:right;"><span t-esc="o._esi_report_fmt_money(d['operation_cost'])"/></td><td style="border:1px solid #aab2b9;padding:4px;text-align:right;"><span t-esc="o._esi_report_fmt_money(d['total_cost'])"/></td><td style="border:1px solid #aab2b9;padding:4px;text-align:right;"><span t-esc="o._esi_report_fmt_money(d['unit_cost'])"/></td><td style="border:1px solid #aab2b9;padding:4px;text-align:right;"><span t-esc="o._esi_report_fmt_money(d['sale_price'])"/></td><td style="border:1px solid #aab2b9;padding:4px;text-align:right;"><span t-esc="o._esi_report_fmt_money(d['potential_revenue'])"/></td><td style="border:1px solid #aab2b9;padding:4px;text-align:right;"><span t-esc="o._esi_report_fmt_money(d['potential_margin'])"/></td><td style="border:1px solid #aab2b9;padding:4px;text-align:right;"><span t-esc="o._esi_report_fmt_pct(d['margin_pct'])"/>%</td></tr>
-                        </table>
-                        <p style="font-size:7px;color:#666;">Margen potencial = PVP de lista actual × cantidad producida - costo de materiales/operaciones. Es una estimación y no prueba que esta OF específica haya sido vendida.</p>
-                    </t>
+    <template id="report_esi_destajo_global_document">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="w">
+                <t t-set="company" t-value="w.company_id"/>
+                <t t-set="lines" t-value="w.esi_get_destajos()"/>
+                <t t-set="summary" t-value="w.esi_get_summary()"/>
+                <div class="page" style="font-family:Arial,sans-serif;font-size:8px;">
+                    <t t-call="esi_produccion_report_v13.esi_report_header"/>
+                    <h2 style="text-align:center;color:#072955;margin:4px 0 8px 0;">REPORTE DE DESTAJOS</h2>
+                    <p><strong>Producto:</strong> <span t-esc="w.product_tmpl_id.display_name or 'Todos'"/> | <strong>OF:</strong> <span t-esc="w.production_id.name or 'Todas'"/> | <strong>Operador:</strong> <span t-esc="w.partner_id.display_name or 'Todos'"/></p>
+                    <h3 style="color:#072955;">Resumen por trabajador</h3>
+                    <table style="border-collapse:collapse;width:100%;font-size:8px;margin-bottom:8px;">
+                        <thead><tr style="background:#eef4fa;color:#072955;"><th style="border:1px solid #ccd5dd;padding:4px;">TRABAJADOR</th><th style="border:1px solid #ccd5dd;padding:4px;">REGISTROS</th><th style="border:1px solid #ccd5dd;padding:4px;">TOTAL CANTIDAD</th><th style="border:1px solid #ccd5dd;padding:4px;">TOTAL DESTAJO</th></tr></thead>
+                        <tbody><tr t-foreach="summary" t-as="s"><td style="border:1px solid #ccd5dd;padding:4px;"><span t-esc="s['worker']"/></td><td style="border:1px solid #ccd5dd;padding:4px;text-align:center;"><span t-esc="s['records']"/></td><td style="border:1px solid #ccd5dd;padding:4px;text-align:right;"><span t-esc="'%.2f' % s['quantity']"/></td><td style="border:1px solid #ccd5dd;padding:4px;text-align:right;"><strong>Bs <span t-esc="'%.2f' % s['amount']"/></strong></td></tr></tbody>
+                        <tfoot><tr style="background:#f5f7f9;"><td style="border:1px solid #ccd5dd;padding:4px;"><strong>TOTAL GENERAL</strong></td><td style="border:1px solid #ccd5dd;padding:4px;text-align:center;"><strong t-esc="len(lines)"/></td><td style="border:1px solid #ccd5dd;padding:4px;text-align:right;"><strong t-esc="'%.2f' % sum(lines.mapped('quantity'))"/></td><td style="border:1px solid #ccd5dd;padding:4px;text-align:right;"><strong>Bs <span t-esc="'%.2f' % sum(lines.mapped('amount'))"/></strong></td></tr></tfoot>
+                    </table>
+                    <h3 style="color:#072955;">Reporte detallado</h3>
+                    <table style="border-collapse:collapse;width:100%;font-size:7.3px;">
+                        <thead><tr style="background:#072955;color:white;"><th style="border:1px solid #8ca0b3;padding:4px;">FECHA</th><th style="border:1px solid #8ca0b3;padding:4px;">TRABAJADOR</th><th style="border:1px solid #8ca0b3;padding:4px;">ORDEN</th><th style="border:1px solid #8ca0b3;padding:4px;">PRODUCTO</th><th style="border:1px solid #8ca0b3;padding:4px;">ACTIVIDAD</th><th style="border:1px solid #8ca0b3;padding:4px;">CANTIDAD</th><th style="border:1px solid #8ca0b3;padding:4px;">UDM</th><th style="border:1px solid #8ca0b3;padding:4px;">PRECIO/UNID.</th><th style="border:1px solid #8ca0b3;padding:4px;">TOTAL</th><th style="border:1px solid #8ca0b3;padding:4px;">ESTADO</th></tr></thead>
+                        <tbody><tr t-foreach="lines" t-as="l"><td style="border:1px solid #ccd5dd;padding:3px;"><span t-esc="l.date"/></td><td style="border:1px solid #ccd5dd;padding:3px;"><span t-esc="l.partner_id.display_name"/></td><td style="border:1px solid #ccd5dd;padding:3px;"><span t-esc="l.production_id.name"/></td><td style="border:1px solid #ccd5dd;padding:3px;"><span t-esc="l.product_id.display_name"/></td><td style="border:1px solid #ccd5dd;padding:3px;"><span t-esc="l.activity_id.name"/></td><td style="border:1px solid #ccd5dd;padding:3px;text-align:right;"><span t-esc="'%.2f' % l.quantity"/></td><td style="border:1px solid #ccd5dd;padding:3px;"><span t-esc="l.uom_id.name"/></td><td style="border:1px solid #ccd5dd;padding:3px;text-align:right;">Bs <span t-esc="'%.2f' % l.unit_price"/></td><td style="border:1px solid #ccd5dd;padding:3px;text-align:right;"><strong>Bs <span t-esc="'%.2f' % l.amount"/></strong></td><td style="border:1px solid #ccd5dd;padding:3px;"><span t-esc="dict(l._fields['state'].selection).get(l.state, l.state)"/></td></tr></tbody>
+                    </table>
                 </div>
             </t>
         </t>
