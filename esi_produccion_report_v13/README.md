@@ -1,29 +1,16 @@
-# ESI Producción Report v13
+# ESI - Informes de Producción Calzado v13
 
-Actualización orientada a `esi_calzados_v13`.
+Esta versión unifica los informes históricos de producción con los nuevos reportes de calzado.
 
-## Reportes en Orden de Fabricación > Imprimir
-1. **ESI - Ficha de costo de producción**
-   - Cantidad requerida por unidad.
-   - Cantidad total.
-   - Costo unitario capturado.
-   - Costo material por unidad.
-   - Costo estimado total.
-   - Cantidad y costo real cuando existen capas de valoración.
-   - Destajos y valoración automática del producto terminado.
+## Menú Fabricación > Informe
+- Informes de Producción (histórico): Resumen, Consumo LdM vs Real, Costos y Margen Potencial; Ver/PDF/Excel.
+- Reportes por Orden de Producción: Ficha de costo, Faltantes, Resumen de destajos, Análisis de producción.
+- Reporte de Destajos: filtro global por fechas, OF, producto, operador y estado.
 
-2. **ESI - Faltantes de materiales y costo**
-   - Requerido, disponible, faltante.
-   - Proveedor sugerido.
-   - Precio estimado de compra.
-   - Costo total faltante.
+## En cada Orden de Producción > Imprimir
+- Análisis de Producción ESI.
+- ESI - Ficha de costo de producción.
+- ESI - Faltantes de materiales y costo.
+- ESI - Resumen de destajos.
 
-3. **ESI - Resumen de destajos**
-   - Resumen por trabajador: registros, cantidad y total destajo.
-   - Detalle: fecha, operador, actividad, cantidad, tarifa, importe y estado.
-
-## Reporte global de destajos
-Fabricación > Informes > **Reporte de Destajos** permite filtrar por fechas, OF, producto, operador y estado.
-
-## Corrección de costo
-La versión usa primero los campos de costo capturados por `esi_calzados_v13` y, cuando la OF ya está valorizada, toma el valor real de `stock.valuation.layer`. Esto evita el problema anterior de reportes que mostraban costo en cero aun existiendo valoración.
+La ficha de costo prioriza el costo capturado en la OF (`esi_unit_cost`) y utiliza capas de valoración para el costo real cuando existen.

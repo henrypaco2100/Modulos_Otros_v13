@@ -1,2 +1,4 @@
 id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_esi_production_report_wizard_user,esi.production.report.wizard user,model_esi_production_report_wizard,mrp.group_mrp_user,1,1,1,1
 access_esi_destajo_report_wizard,esi.destajo.report.wizard,model_esi_destajo_report_wizard,mrp.group_mrp_user,1,1,1,1
+access_esi_production_order_report_wizard,esi.production.order.report.wizard,model_esi_production_order_report_wizard,mrp.group_mrp_user,1,1,1,1
