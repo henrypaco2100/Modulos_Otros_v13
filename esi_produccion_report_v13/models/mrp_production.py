@@ -200,13 +200,16 @@ class MrpProduction(models.Model):
         material_rows = self._esi_report_material_rows(include_costs=can_costs)
         material_planned_cost = sum(r['planned_cost'] for r in material_rows) if can_costs else 0.0
         material_actual_cost = sum(r['actual_cost'] for r in material_rows) if can_costs else 0.0
-        operation_rows = self._esi_report_operation_rows()
-        operation_cost = (sum(self.esi_destajo_ids.filtered(lambda d: d.state in ('confirmed', 'paid')).mapped('amount')) if can_costs and 'esi_destajo_ids' in self._fields else (self._esi_report_workorder_cost() if can_costs else 0.0))
-        piecework_planned_total = sum(r['planned_piecework'] for r in operation_rows)
-        piecework_registered_total = sum(r['registered_piecework'] for r in operation_rows)
-        standard_operation_minutes = sum(r['standard_minutes_total'] for r in operation_rows)
-        actual_operation_minutes = sum(r['actual_minutes'] for r in operation_rows)
-        standard_labor_cost = sum(r['planned_labor_cost'] for r in operation_rows)
+        # Esta edición de Calzados no calcula tiempos ni destajos dentro de la OF.
+        # Destajos se registran como gasto independiente. Si el usuario carga un
+        # importe manual en "Otros costos estimados", sí se muestra informativamente.
+        operation_rows = []
+        operation_cost = self.esi_other_cost if 'esi_other_cost' in self._fields else 0.0
+        piecework_planned_total = 0.0
+        piecework_registered_total = 0.0
+        standard_operation_minutes = 0.0
+        actual_operation_minutes = 0.0
+        standard_labor_cost = 0.0
         total_cost = material_actual_cost + operation_cost
         sale_price = self.product_id.lst_price if can_costs else 0.0
         potential_revenue = produced_qty * sale_price if can_costs else 0.0
@@ -216,8 +219,6 @@ class MrpProduction(models.Model):
         duration_hours = 0.0
         if self.date_start and self.date_finished:
             duration_hours = (self.date_finished - self.date_start).total_seconds() / 3600.0
-        elif self.workorder_ids:
-            duration_hours = sum((getattr(wo, 'duration', 0.0) or 0.0) for wo in self.workorder_ids) / 60.0
 
         return {
             'production': self,
@@ -324,51 +325,20 @@ class MrpProductionCalzadoReports(models.Model):
 
     def esi_report_destajo_rows(self):
         self.ensure_one()
-        rows = []
-        destajos = self.esi_destajo_ids if 'esi_destajo_ids' in self._fields else self.env['esi.calzado.destajo']
-        for line in destajos.sorted(key=lambda d: (d.date or '', d.id)):
-            rows.append({
-                'date': line.date,
-                'worker': line.partner_id.display_name or '',
-                'activity': line.activity_id.display_name or '',
-                'description': line.description or '',
-                'quantity': line.quantity or 0.0,
-                'uom': line.uom_id.name or '',
-                'unit_price': line.unit_price or 0.0,
-                'amount': line.amount or 0.0,
-                'state': _esi_selection_label(line, 'state', line.state, line.state or ''),
-            })
-        return rows
+        return []
 
     def esi_report_destajo_summary(self):
         self.ensure_one()
-        grouped = EsiOrderedDict()
-        destajos = self.esi_destajo_ids if 'esi_destajo_ids' in self._fields else self.env['esi.calzado.destajo']
-        for line in destajos:
-            key = line.partner_id.id or 0
-            if key not in grouped:
-                grouped[key] = {
-                    'worker': line.partner_id.display_name or 'Sin operador',
-                    'records': 0,
-                    'quantity': 0.0,
-                    'amount': 0.0,
-                }
-            grouped[key]['records'] += 1
-            grouped[key]['quantity'] += line.quantity or 0.0
-            grouped[key]['amount'] += line.amount or 0.0
-        return list(grouped.values())
+        return []
 
     def esi_report_cost_summary(self):
         self.ensure_one()
         material_rows = self.esi_report_material_rows()
         material_estimated = sum(row['planned_cost'] for row in material_rows)
         material_actual = sum(row['actual_cost'] for row in material_rows)
-        destajos = self.esi_destajo_ids if 'esi_destajo_ids' in self._fields else self.env['esi.calzado.destajo']
-        destajo_all = sum(destajos.mapped('amount'))
-        destajo_confirmed = sum(destajos.filtered(lambda d: d.state in ('confirmed', 'paid')).mapped('amount'))
         other_cost = self.esi_other_cost if 'esi_other_cost' in self._fields else 0.0
-        estimated_total = material_estimated + destajo_all + (other_cost or 0.0)
-        confirmed_total = material_actual + destajo_confirmed + (other_cost or 0.0)
+        estimated_total = material_estimated + (other_cost or 0.0)
+        confirmed_total = material_actual + (other_cost or 0.0)
 
         finished_moves = self.move_finished_ids.filtered(
             lambda m: m.product_id == self.product_id and m.state != 'cancel'
@@ -384,8 +354,8 @@ class MrpProductionCalzadoReports(models.Model):
         return {
             'material_estimated': material_estimated,
             'material_actual': material_actual,
-            'destajo_all': destajo_all,
-            'destajo_confirmed': destajo_confirmed,
+            'destajo_all': 0.0,
+            'destajo_confirmed': 0.0,
             'other_cost': other_cost or 0.0,
             'estimated_total': estimated_total,
             'estimated_unit': estimated_total / self.product_qty if self.product_qty else 0.0,
@@ -395,3 +365,4 @@ class MrpProductionCalzadoReports(models.Model):
             'finished_valuation_unit': valued_unit,
             'missing_cost': sum(row['missing_cost'] for row in material_rows),
         }
+

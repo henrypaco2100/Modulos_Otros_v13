@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_esi_production_group_form_report" model="ir.ui.view">
+        <field name="name">esi.production.group.form.report</field>
+        <field name="model">esi.production.group</field>
+        <field name="inherit_id" ref="esi_calzados_v13.view_esi_production_group_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//header/button[@name='action_create_productions']" position="after">
+                <button name="%(action_report_esi_production_group)d" type="action"
+                        string="Imprimir resumen del grupo" class="btn-secondary"
+                        attrs="{'invisible':[('production_count','=',0)]}"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>

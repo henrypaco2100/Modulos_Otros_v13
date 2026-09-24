@@ -18,7 +18,6 @@ class EsiProductionOrderReportWizard(models.TransientModel):
     report_type = fields.Selection([
         ('cost', 'Ficha de costo de producción'),
         ('shortage', 'Faltantes de materiales y costo'),
-        ('piecework', 'Resumen de destajos de la OF'),
         ('analysis', 'Análisis de producción ESI'),
     ], string='Reporte', required=True, default='cost')
 
@@ -29,7 +28,6 @@ class EsiProductionOrderReportWizard(models.TransientModel):
         report_xmlids = {
             'cost': 'esi_produccion_report_v13.action_report_esi_production_cost',
             'shortage': 'esi_produccion_report_v13.action_report_esi_material_shortage',
-            'piecework': 'esi_produccion_report_v13.action_report_esi_destajo_mo',
             'analysis': 'esi_produccion_report_v13.action_report_esi_production_detail',
         }
         action = self.env.ref(report_xmlids[self.report_type])

@@ -10,9 +10,9 @@ class EsiDestajoReportWizard(models.TransientModel):
 
     date_from = fields.Date(string='Desde')
     date_to = fields.Date(string='Hasta')
-    production_id = fields.Many2one('mrp.production', string='Orden de fabricación')
-    product_tmpl_id = fields.Many2one('product.template', string='Producto')
+    product_tmpl_id = fields.Many2one('product.template', string='Producto / Línea')
     partner_id = fields.Many2one('res.partner', string='Operador / Destajista')
+    activity_id = fields.Many2one('esi.calzado.destajo.actividad', string='Actividad')
     state_filter = fields.Selection([
         ('all', 'Todos'),
         ('draft', 'Borrador'),
@@ -34,12 +34,12 @@ class EsiDestajoReportWizard(models.TransientModel):
             domain.append(('date', '>=', self.date_from))
         if self.date_to:
             domain.append(('date', '<=', self.date_to))
-        if self.production_id:
-            domain.append(('production_id', '=', self.production_id.id))
         if self.product_tmpl_id:
             domain.append(('product_id.product_tmpl_id', '=', self.product_tmpl_id.id))
         if self.partner_id:
             domain.append(('partner_id', '=', self.partner_id.id))
+        if self.activity_id:
+            domain.append(('activity_id', '=', self.activity_id.id))
         if self.state_filter != 'all':
             domain.append(('state', '=', self.state_filter))
         return domain
