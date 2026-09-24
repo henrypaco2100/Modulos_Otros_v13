@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'ESI - Informes de Producción Calzado',
-    'version': '13.0.5.1.0',
+    'version': '13.0.5.1.2',
     'summary': 'Informes de producción, costos, faltantes, grupos de producción y destajos independientes',
     'author': 'ESI - Especialistas en Sistemas Integrados',
     'category': 'Manufacturing/Reporting',
